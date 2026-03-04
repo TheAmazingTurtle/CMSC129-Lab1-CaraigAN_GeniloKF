@@ -1,0 +1,25 @@
+{
+  "name": "cmsc129-lab1-caraigan_genilokf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheAmazingTurtle/CMSC129-Lab1-CaraigAN_GeniloKF.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TheAmazingTurtle/CMSC129-Lab1-CaraigAN_GeniloKF/issues"
+  },
+  "homepage": "https://github.com/TheAmazingTurtle/CMSC129-Lab1-CaraigAN_GeniloKF#readme",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
