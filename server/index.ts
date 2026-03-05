@@ -5,18 +5,19 @@ import cors from 'cors';
 import { Player } from './models/Player.ts';
 
 const app = express();
-const httpServer = createServer(app);
-app.use(cors()); 
+app.use(cors());
+app.use(express.json());
 
-app.get('/api/status', (req, res) => {
-  res.json({ message: "Server is alive and gaming!" });
+app.get('/api/test', (req, res) => {
+  res.json({ message: "Backend is working!" });
 });
 
-// THIS LINE keeps the server running:
-httpServer.listen(5000, () => {
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(5000, () => {
     connectDB();
-    console.log("Server running on port 5000");
-});
+    console.log('Server running on 5000')
+  });
+}
 
 app.post('/api/create-player', async (req, res) => {
   const newPlayer = new Player({ username: "PlayerOne", x: 100, y: 100 });
