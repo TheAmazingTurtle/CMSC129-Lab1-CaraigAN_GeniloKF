@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
   const [lastAction, setLastAction]   = useState("The road ahead is long...");
   const [encounter, setEncounter]     = useState<ServerEncounter | null>(null);
 
-  const { hp, applyServerStats } = usePlayer();
+  const { hp, applyServerStats, setLastSaved } = usePlayer();
 
   const getToken = () => localStorage.getItem('game_token') ?? '';
 
@@ -67,6 +67,7 @@ const Dashboard: React.FC = () => {
         // Safe walk — server updated stats and saved atomically
         setLastAction(data.message);
         applyServerStats(data.updatedStats);
+        if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
       }
     }
 
@@ -85,9 +86,8 @@ const Dashboard: React.FC = () => {
     if (data) {
       setLastAction(data.message);
       applyServerStats(data.updatedStats);
-
-      // Auto-save milestone: check if the player levelled up or died
-      // (stepRoute already saves atomically, so no extra call needed here)
+      // Covers level-up and player death — stepRoute saved atomically
+      if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
     }
 
     setEncounter(null);

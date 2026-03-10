@@ -121,6 +121,7 @@ const Step = async (req: IGetUserAuthInfoRequest, res: express.Response) => {
     res.json({
       outcome: outcomeType,
       message,
+      lastSaved: user.lastSaved,
       updatedStats: {
         hp:    user.hp,
         maxHp: user.maxHp,

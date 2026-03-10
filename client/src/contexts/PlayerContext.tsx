@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 
 // --- Inventory types (source of truth — mirrors User.ts schemas) ---
 export type EquipmentSlot = 'Weapon' | 'Head Wear' | 'Body Armor' | 'Pants';
@@ -32,12 +32,18 @@ interface PlayerContextType {
   lastSaved: Date | null;
   addGold: (amount: number) => void;
   spendGold: (amount: number) => void;
+  // Spends gold, saves to DB, and updates the lastSaved timestamp.
+  // Use this instead of spendGold wherever a gold-spend is a save milestone.
+  spendGoldAndSave: (amount: number) => Promise<void>;
   regenHP: (amount: number) => void;
   takeDamage: (amount: number) => void;
   gainExp: (amount: number) => void;
   levelUp: () => void;
   setInventory: React.Dispatch<React.SetStateAction<Item[]>>;
   setEquippedItems: React.Dispatch<React.SetStateAction<Record<EquipmentSlot, Item | null>>>;
+  // Exposes the lastSaved setter so Dashboard can stamp the timestamp
+  // returned directly by stepRoute without a redundant savePlayerState call.
+  setLastSaved: React.Dispatch<React.SetStateAction<Date | null>>;
   loadPlayerState: () => Promise<void>;
   applyServerStats: (stats: {
     hp: number; maxHp: number; gold: number; exp: number; level: number;
@@ -69,6 +75,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [inventory, setInventory] = useState<Item[]>([]);
     const [equippedItems, setEquippedItems] = useState<Record<EquipmentSlot, Item | null>>(EMPTY_EQUIPPED);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+    // Refs mirror every piece of state that savePlayerState needs to send.
+    // Unlike the useCallback dependency array, refs are always current —
+    // this means savePlayerState never captures stale values even when called
+    // immediately after a setState (e.g. equip/unequip/use in Inventory.tsx).
+    const stateRef = useRef({ hp: 100, maxHp: 100, gold: 0, exp: 0, level: 1, inventory: [] as Item[], equippedItems: EMPTY_EQUIPPED });
+
+    useEffect(() => { stateRef.current.hp           = hp;           }, [hp]);
+    useEffect(() => { stateRef.current.maxHp        = maxHp;        }, [maxHp]);
+    useEffect(() => { stateRef.current.gold         = gold;         }, [gold]);
+    useEffect(() => { stateRef.current.exp          = exp;          }, [exp]);
+    useEffect(() => { stateRef.current.level        = level;        }, [level]);
+    useEffect(() => { stateRef.current.inventory    = inventory;    }, [inventory]);
+    useEffect(() => { stateRef.current.equippedItems = equippedItems; }, [equippedItems]);
 
     const expThreshold = calcExpThreshold(level);
 
@@ -105,18 +125,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }, []);
 
-    // Reads current state values via a functional pattern and POSTs to /api/game/save.
-    // Returns the server's lastSaved timestamp on success, or null on failure.
+    // Reads the latest state via stateRef (not the closure) so it is safe to call
+    // immediately after setState — no stale inventory or equippedItems ever get sent.
     const savePlayerState = useCallback(async (): Promise<{ lastSaved: Date } | null> => {
       const token = localStorage.getItem('game_token');
       if (!token) return null;
 
-      // Capture current values at call time via ref-like approach
-      // by passing them directly — callers should await this after their state setters.
       try {
-        // We need to read state values; since this is useCallback we use
-        // a state-reading trick: setX(prev => { capture = prev; return prev })
-        // Instead, we pass a snapshot approach — see note below.
+        const snap = stateRef.current;
         const res = await fetch('http://localhost:5000/api/game/save', {
           method: 'POST',
           headers: {
@@ -124,7 +140,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
-            hp, maxHp, gold, exp, level, inventory, equippedItems,
+            hp:            snap.hp,
+            maxHp:         snap.maxHp,
+            gold:          snap.gold,
+            exp:           snap.exp,
+            level:         snap.level,
+            inventory:     snap.inventory,
+            equippedItems: snap.equippedItems,
           }),
         });
 
@@ -137,8 +159,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.error("Failed to save player state:", err);
         return null;
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hp, maxHp, gold, exp, level, inventory, equippedItems]);
+    }, []); // No deps needed — always reads from stateRef
 
     const applyServerStats = useCallback((stats: {
       hp: number; maxHp: number; gold: number; exp: number; level: number;
@@ -152,6 +173,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const addGold   = (amount: number) => setGold(prev => prev + amount);
     const spendGold = (amount: number) => setGold(prev => Math.max(0, prev - amount));
+
+    // Async version for gold-spend milestones — deducts gold, saves, stamps timestamp.
+    const spendGoldAndSave = async (amount: number) => {
+      setGold(prev => Math.max(0, prev - amount));
+      await savePlayerState();
+    };
     const takeDamage = (amount: number) => setHp(prev => Math.max(0, prev - amount));
     const regenHP   = (amount: number) => setHp(prev => Math.min(maxHp, prev + amount));
 
@@ -190,8 +217,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           gold, exp, expThreshold, hp, maxHp,
           skillPoints, attack, defense, dexterity, level,
           isLoading, inventory, equippedItems, lastSaved,
-          addGold, spendGold, regenHP, takeDamage, gainExp, levelUp,
-          setInventory, setEquippedItems,
+          addGold, spendGold, spendGoldAndSave, regenHP, takeDamage, gainExp, levelUp,
+          setInventory, setEquippedItems, setLastSaved,
           loadPlayerState, applyServerStats, savePlayerState,
         }}>
           {children}

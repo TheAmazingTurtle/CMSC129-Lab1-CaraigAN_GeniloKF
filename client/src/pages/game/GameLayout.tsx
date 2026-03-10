@@ -22,7 +22,8 @@ const GameLayout: React.FC = () => {
     loadPlayerState();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Seed the lastSaved display once state is loaded
+  // Update the timestamp display whenever lastSaved changes —
+  // covers both initial load and every subsequent save (manual or milestone).
   useEffect(() => {
     if (lastSaved) {
       setSaveMsg(formatSaveTime(lastSaved));
