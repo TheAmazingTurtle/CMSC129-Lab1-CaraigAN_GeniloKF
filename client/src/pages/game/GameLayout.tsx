@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { usePlayer } from '../../contexts/PlayerContext.tsx';
 import './Dashboard.css';
@@ -6,17 +6,49 @@ import './Dashboard.css';
 import ProgressBar from './props/ProgressBar.tsx';
 
 const GameLayout: React.FC = () => {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const { level, gold, exp, expThreshold, hp, maxHp, isLoading, loadPlayerState } = usePlayer();
+  const {
+    level, gold, exp, expThreshold, hp, maxHp,
+    isLoading, loadPlayerState,
+    savePlayerState, lastSaved,
+  } = usePlayer();
 
-  // Load saved state on any fresh page entry (login redirect OR direct URL / refresh).
-  // This is the fix for Stage 4 TC4 — Login calls loadPlayerState too, but a
-  // second call is harmless and ensures refreshes never show stale defaults.
+  const [isSaving, setIsSaving]       = useState(false);
+  const [saveMsg, setSaveMsg]         = useState<string>('');
+
   useEffect(() => {
     loadPlayerState();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Seed the lastSaved display once state is loaded
+  useEffect(() => {
+    if (lastSaved) {
+      setSaveMsg(formatSaveTime(lastSaved));
+    }
+  }, [lastSaved]);
+
+  const formatSaveTime = (date: Date) => {
+    return `Saved ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const handleManualSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveMsg('Saving...');
+
+    const result = await savePlayerState();
+
+    setIsSaving(false);
+    if (result) {
+      setSaveMsg(formatSaveTime(result.lastSaved));
+    } else {
+      setSaveMsg('⚠ Save failed');
+      // Clear the failure message after 3 seconds
+      setTimeout(() => setSaveMsg(lastSaved ? formatSaveTime(lastSaved) : ''), 3000);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,6 +75,19 @@ const GameLayout: React.FC = () => {
         <div className="stat-item">
           <span className="label">Exp:</span>
           <ProgressBar currentProgress={exp} threshold={expThreshold} barColor="var(--exp-color)" />
+        </div>
+
+        {/* Manual save — sits at the far right of the stats bar */}
+        <div className="save-section">
+          <button
+            className={`save-btn ${isSaving ? 'saving' : ''}`}
+            onClick={handleManualSave}
+            disabled={isSaving}
+            title="Save your progress"
+          >
+            {isSaving ? '💾 Saving...' : '💾 Save'}
+          </button>
+          {saveMsg && <span className="save-timestamp">{saveMsg}</span>}
         </div>
       </header>
 
