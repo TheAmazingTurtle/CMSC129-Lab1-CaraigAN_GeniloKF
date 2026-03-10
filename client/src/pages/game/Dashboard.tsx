@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePlayer } from '../../contexts/PlayerContext.tsx';
 import './Dashboard.css';
 
 interface Enemy {
@@ -11,16 +12,18 @@ interface Enemy {
 const Dashboard: React.FC = () => {
   // Game Logic State
   const [isCooldown, setIsCooldown] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0); // Tracks the randomized duration
   const [lastAction, setLastAction] = useState("The road ahead is long...");
   const [encounter, setEncounter] = useState<Enemy | null>(null);
 
-  // Note: HP/Gold/EXP will eventually come from a Context or Global State 
-  // For now, we'll keep local placeholders to demonstrate the logic
-  const [hp, setHp] = useState(100);
+  const { hp, addGold, gainExp, takeDamage } = usePlayer();
 
   const handleStep = () => {
     if (isCooldown || encounter || hp <= 0) return;
 
+    // Randomize wait time between 1500ms and 3500ms
+    const waitTime = Math.floor(Math.random() * 2000) + 1500;
+    setCooldownTime(waitTime);
     setIsCooldown(true);
     
     // 20% chance for an enemy encounter
@@ -28,12 +31,16 @@ const Dashboard: React.FC = () => {
     if (roll < 0.2) {
       triggerEncounter();
     } else {
-      const goldGained = Math.floor(Math.random() * 5) + 1;
+      const goldGained = Math.floor(Math.random() * 15) + 10;
+      const expGained = Math.floor(Math.random() * 15) + 10;
+      
       setLastAction(`You walked safely and found ${goldGained} gold.`);
-      // Update global state/backend here
+      addGold(goldGained);
+      gainExp(expGained);
     }
 
-    setTimeout(() => setIsCooldown(false), 1200);
+    // Dynamic timeout matching our animation
+    setTimeout(() => setIsCooldown(false), waitTime);
   };
 
   const triggerEncounter = () => {
@@ -50,9 +57,10 @@ const Dashboard: React.FC = () => {
   const handleFight = () => {
     if (!encounter) return;
     
-    setHp(prev => Math.max(0, prev - encounter.hpLoss));
+    takeDamage(encounter.hpLoss);
     setLastAction(`Victory! You defeated the ${encounter.name} but lost ${encounter.hpLoss} HP.`);
-    // Add rewards logic here
+    addGold(encounter.goldReward);
+    gainExp(encounter.expReward);
     setEncounter(null);
   };
 
@@ -69,22 +77,40 @@ const Dashboard: React.FC = () => {
 
       <div className="action-zone">
         {!encounter ? (
-          <button 
-            className={`step-btn ${isCooldown ? 'cooldown' : ''}`} 
-            onClick={handleStep}
-            disabled={isCooldown || hp <= 0}
-          >
-            {hp <= 0 ? 'YOU ARE EXHAUSTED' : isCooldown ? 'WAITING...' : 'TAKE A STEP'}
-          </button>
+          <div className="step-btn-wrapper">
+            {/* SVG Progress Ring Overlay */}
+            {isCooldown && (
+              <svg className="cooldown-ring" viewBox="0 0 180 180">
+                <circle 
+                  className="cooldown-circle" 
+                  cx="90" cy="90" r="86" 
+                  style={{ animationDuration: `${cooldownTime}ms` }} 
+                />
+              </svg>
+            )}
+            <button 
+              className={`step-btn ${isCooldown ? 'cooldown' : ''}`} 
+              onClick={handleStep}
+              disabled={isCooldown || hp <= 0}
+            >
+              {hp <= 0 ? 'EXHAUSTED' : isCooldown ? 'WAITING...' : 'TAKE A STEP'}
+            </button>
+          </div>
         ) : (
-          <div className="encounter-controls">
+          <div className="encounter-card">
             <div className="enemy-preview">
               <h3>{encounter.name}</h3>
-              <p>Estimated Risk: {encounter.hpLoss} HP</p>
+              <p className="risk-text">Expected Damage: <strong>{encounter.hpLoss} HP</strong></p>
+              
+              <div className="loot-preview">
+                <span>💰 {encounter.goldReward} Gold</span>
+                <span>✨ {encounter.expReward} XP</span>
+              </div>
             </div>
+            
             <div className="button-group">
-              <button className="fight-btn" onClick={handleFight}>FIGHT</button>
-              <button className="skip-btn" onClick={handleSkip}>SKIP</button>
+              <button className="fight-btn" onClick={handleFight}>⚔️ FIGHT</button>
+              <button className="skip-btn" onClick={handleSkip}>🏃 SKIP</button>
             </div>
           </div>
         )}
