@@ -1,0 +1,243 @@
+/* ── Shop page layout ───────────────────────────────────────────── */
+.shop-page {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 6rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: #eee;
+}
+
+.shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #333;
+}
+
+.shop-header h2 {
+  font-size: 1.3rem;
+  color: #ffd700;
+  letter-spacing: 0.05em;
+}
+
+.shop-gold {
+  font-size: 0.95rem;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+/* ── Tier badge pills ───────────────────────────────────────────── */
+.shop-tier-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  margin-bottom: 0.75rem;
+}
+
+.shop-tier-badge.tier-1 { background: #2a2a2a; color: #aaa;    border: 1px solid #555; }
+.shop-tier-badge.tier-2 { background: #1a2a1a; color: #6dbf6d; border: 1px solid #3a7a3a; }
+.shop-tier-badge.tier-3 { background: #1a1a2a; color: #7a8fff; border: 1px solid #3a3a9a; }
+
+/* ── Locked tier card ───────────────────────────────────────────── */
+.shop-locked {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.2rem;
+  background: #161616;
+  border: 1px dashed #333;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.shop-locked-icon { font-size: 1.2rem; }
+
+/* ── Item grid ──────────────────────────────────────────────────── */
+.shop-section {
+  margin-bottom: 2rem;
+}
+
+.shop-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shop-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+  cursor: default;
+}
+
+.shop-item-row:hover {
+  border-color: #444;
+}
+
+.shop-item-row.owned {
+  opacity: 0.45;
+}
+
+.shop-item-name {
+  flex: 2;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.shop-item-type {
+  flex: 1;
+  font-size: 0.75rem;
+  color: #777;
+}
+
+.shop-item-stat {
+  flex: 1.2;
+  font-size: 0.78rem;
+  color: #5ba3d9;
+}
+
+.shop-item-rarity {
+  flex: 1;
+  font-size: 0.75rem;
+}
+
+.shop-item-price {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  color: #ffd700;
+  font-weight: bold;
+  min-width: 52px;
+  text-align: right;
+}
+
+.shop-buy-btn {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.shop-buy-btn:hover:not(:disabled) {
+  background: #ffd700;
+  color: #121212;
+}
+
+.shop-buy-btn:disabled {
+  border-color: #444;
+  color: #444;
+  cursor: not-allowed;
+}
+
+/* ── Rarity colours (mirrors Inventory.tsx var usage) ───────────── */
+:root {
+  --common:    #aaa;
+  --uncommon:  #6dbf6d;
+  --rare:      #5ba3d9;
+  --epic:      #b06aff;
+  --legendary: #ff9a3c;
+}
+
+/* ── Buy confirm modal ──────────────────────────────────────────── */
+.shop-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.shop-modal {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 340px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #eee;
+}
+
+.shop-modal h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.shop-modal p {
+  color: #aaa;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.shop-modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.shop-modal-actions button {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.shop-modal-actions button:first-child {
+  background: #ffd700;
+  color: #121212;
+  border: none;
+}
+
+.shop-modal-actions button:first-child:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shop-modal-actions button:last-child {
+  background: #2a2a2a;
+  color: #aaa;
+  border: 1px solid #444;
+}
+
+/* ── Toast ──────────────────────────────────────────────────────── */
+.shop-toast {
+  position: fixed;
+  bottom: 4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  border: 1px solid #444;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #ccc;
+  z-index: 999;
+  pointer-events: none;
+  font-family: 'Courier New', Courier, monospace;
+}

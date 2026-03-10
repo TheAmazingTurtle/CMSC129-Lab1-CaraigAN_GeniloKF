@@ -9,6 +9,7 @@ import GameLayout from './pages/game/GameLayout.tsx';
 import Dashboard from './pages/game/Dashboard.tsx';
 import Character from './pages/game/Character.tsx';
 import Inventory from './pages/game/Inventory.tsx';
+import Shop      from './pages/game/Shop.tsx';
 
 import { PlayerProvider } from './contexts/PlayerContext.tsx';
 
@@ -34,6 +35,7 @@ const App: React.FC = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/character" element={<Character />} />
+            <Route path="/shop"      element={<Shop />} />
           </Route>
         </Route>
         {/* Catch-all redirect */}

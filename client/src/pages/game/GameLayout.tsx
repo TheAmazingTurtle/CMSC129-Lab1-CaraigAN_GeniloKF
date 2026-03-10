@@ -104,6 +104,9 @@ const GameLayout: React.FC = () => {
           className={`nav-item ${location.pathname === '/inventory' ? 'active' : ''}`}
           onClick={() => navigate('/inventory')}>Bag</button>
         <button
+          className={`nav-item ${location.pathname === '/shop' ? 'active' : ''}`}
+          onClick={() => navigate('/shop')}>Shop</button>
+        <button
           className={`nav-item ${location.pathname === '/character' ? 'active' : ''}`}
           onClick={() => navigate('/character')}>Hero</button>
       </footer>
