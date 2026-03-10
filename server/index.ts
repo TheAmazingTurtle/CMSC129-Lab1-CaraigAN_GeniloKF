@@ -11,6 +11,7 @@ import AuthenticateToken from './middleware/authenticateToken.ts';
 import GetState from './routes/getStateRoute.ts';
 import Save     from './routes/saveRoute.ts';
 import Step     from './routes/stepRoute.ts';
+import Equip    from './routes/equipRoute.ts';
 
 dotenv.config();
 const app = express();
@@ -25,9 +26,10 @@ app.use('/api/auth/login',  Login);
 app.use('/api/auth/logout', Logout);
 
 // --- Game routes (JWT protected) ---
-app.get('/api/game/state', AuthenticateToken, GetState);
-app.post('/api/game/save', AuthenticateToken, Save);
-app.post('/api/game/step', AuthenticateToken, Step);
+app.get('/api/game/state',  AuthenticateToken, GetState);
+app.post('/api/game/save',  AuthenticateToken, Save);
+app.post('/api/game/step',  AuthenticateToken, Step);
+app.post('/api/game/equip', AuthenticateToken, Equip);
 
 connectDB();
 

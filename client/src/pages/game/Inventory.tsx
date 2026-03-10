@@ -12,20 +12,86 @@ const Inventory: React.FC = () => {
   const {
     inventory, setInventory,
     equippedItems, setEquippedItems,
+    setLastSaved,
     savePlayerState,
   } = usePlayer();
 
   const equipped = equippedItems as Record<EquipmentSlot, Item | null>;
 
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [saveStatus, setSaveStatus]     = useState<string>('');
-  const [filterType, setFilterType]     = useState<ItemType | 'All'>('All');
-  const [sortBy, setSortBy]             = useState<'level' | 'rarity'>('level');
-  const [currentPage, setCurrentPage]   = useState(1);
+  const [selectedItem, setSelectedItem]   = useState<Item | null>(null);
+  const [saveStatus, setSaveStatus]       = useState<string>('');
+  const [filterType, setFilterType]       = useState<ItemType | 'All'>('All');
+  const [sortBy, setSortBy]               = useState<'level' | 'rarity'>('level');
+  const [currentPage, setCurrentPage]     = useState(1);
 
   const flashSaveStatus = (msg: string) => {
     setSaveStatus(msg);
     setTimeout(() => setSaveStatus(''), 2000);
+  };
+
+  const getToken = () => localStorage.getItem('game_token') ?? '';
+
+  // Calls POST /api/game/equip and syncs context from the authoritative server response.
+  // The server splices by inventoryIndex — not by id — so duplicate items are handled safely.
+  // No setState → savePlayerState race condition: the DB write happens before we update context.
+  const postEquip = async (body: object): Promise<boolean> => {
+    try {
+      const res = await fetch('http://localhost:5000/api/game/equip', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        flashSaveStatus(`⚠ ${err.message ?? 'Server error'}`);
+        return false;
+      }
+      const data = await res.json();
+      // Update context from server response — always authoritative
+      setInventory(data.inventory);
+      setEquippedItems(data.equippedItems);
+      if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
+      return true;
+    } catch {
+      flashSaveStatus('⚠ Cannot reach server');
+      return false;
+    }
+  };
+
+  // inventoryIndex is the item's position in the RAW inventory array (not the filtered/paginated view).
+  // This is what the server needs to splice by index safely.
+  const equipItem = async (item: Item, inventoryIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (item.type === 'Consumable') return;
+    const slot = item.type as EquipmentSlot;
+    const ok = await postEquip({ action: 'equip', inventoryIndex, slot });
+    flashSaveStatus(ok ? '✓ Equipped & saved' : '⚠ Equip failed');
+  };
+
+  const unequipItem = async (slot: EquipmentSlot) => {
+    const ok = await postEquip({ action: 'unequip', slot });
+    flashSaveStatus(ok ? '✓ Unequipped & saved' : '⚠ Unequip failed');
+  };
+
+  const useItem = async (item: Item, e: React.MouseEvent) => {
+    e.stopPropagation();
+    alert(`You used: ${item.name}!`);
+
+    setInventory(prev => {
+      // Remove only the first occurrence — safe for duplicate items
+      const idx = prev.findIndex(i => i.id === item.id);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next.splice(idx, 1);
+      return next;
+    });
+    if (selectedItem?.id === item.id) setSelectedItem(null);
+
+    const result = await savePlayerState();
+    flashSaveStatus(result ? '✓ Item used & saved' : '⚠ Item use saved locally only');
   };
 
   const processedItems = useMemo(() => {
@@ -53,44 +119,6 @@ const Inventory: React.FC = () => {
     if (currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  const equipItem = async (item: Item, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (item.type === 'Consumable') return;
-    const slot = item.type as EquipmentSlot;
-    const currentlyEquipped = equipped[slot];
-
-    setEquippedItems(prev => ({ ...prev, [slot]: item }));
-    setInventory(prev => {
-      const filtered = prev.filter(i => i.id !== item.id);
-      return currentlyEquipped ? [...filtered, currentlyEquipped] : filtered;
-    });
-
-    const result = await savePlayerState();
-    flashSaveStatus(result ? '✓ Equipped & saved' : '⚠ Equip saved locally only');
-  };
-
-  const unequipItem = async (slot: EquipmentSlot) => {
-    const item = equipped[slot];
-    if (!item) return;
-
-    setInventory(prev => [...prev, item]);
-    setEquippedItems(prev => ({ ...prev, [slot]: null }));
-
-    const result = await savePlayerState();
-    flashSaveStatus(result ? '✓ Unequipped & saved' : '⚠ Unequip saved locally only');
-  };
-
-  const useItem = async (item: Item, e: React.MouseEvent) => {
-    e.stopPropagation();
-    alert(`You used: ${item.name}!`);
-
-    setInventory(prev => prev.filter(i => i.id !== item.id));
-    if (selectedItem?.id === item.id) setSelectedItem(null);
-
-    const result = await savePlayerState();
-    flashSaveStatus(result ? '✓ Item used & saved' : '⚠ Item use saved locally only');
-  };
-
   return (
     <div className="inventory-page">
       {saveStatus && (
@@ -104,7 +132,7 @@ const Inventory: React.FC = () => {
         </div>
       )}
 
-      {/* LEFT PANEL */}
+      {/* LEFT PANEL — equipped slots */}
       <div className="equipment-section">
         <h2>Character</h2>
         <div className="equip-grid">
@@ -127,7 +155,7 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT PANEL */}
+      {/* RIGHT PANEL — satchel */}
       <div className="inventory-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2>Satchel</h2>
@@ -158,22 +186,38 @@ const Inventory: React.FC = () => {
           </div>
 
           <div className="items-container">
-            {paginatedItems.map(item => (
-              <div key={item.id} className="inventory-row" onClick={() => setSelectedItem(item)}>
-                <div style={{ flex: 1.5, fontWeight: 'bold', textAlign: 'left' }}>{item.name}</div>
-                <div style={{ flex: 1, color: 'var(--text-muted)' }}>{item.type}</div>
-                <div style={{ flex: 1 }}>{item.level}</div>
-                <div style={{ flex: 1, color: `var(--${item.rarity.toLowerCase()})` }}>{item.rarity}</div>
-                <div style={{ flex: 1 }} className="stat-text">{item.stat}</div>
-                <div style={{ flex: 1 }}>
-                  {item.type === 'Consumable' ? (
-                    <button onClick={(e) => useItem(item, e)}>Use</button>
-                  ) : (
-                    <button onClick={(e) => equipItem(item, e)}>Equip</button>
-                  )}
+            {paginatedItems.map((item) => {
+              // Resolve the item's true index in the raw inventory array.
+              // We track how many times this id has appeared so far in paginatedItems
+              // to correctly identify which duplicate we're looking at.
+              const occurrencesBeforeThis = paginatedItems
+                .slice(0, paginatedItems.indexOf(item))
+                .filter(i => i.id === item.id).length;
+              let found = 0;
+              const rawIndex = inventory.findIndex(i => {
+                if (i.id !== item.id) return false;
+                if (found === occurrencesBeforeThis) return true;
+                found++;
+                return false;
+              });
+
+              return (
+                <div key={`${item.id}-${rawIndex}`} className="inventory-row" onClick={() => setSelectedItem(item)}>
+                  <div style={{ flex: 1.5, fontWeight: 'bold', textAlign: 'left' }}>{item.name}</div>
+                  <div style={{ flex: 1, color: 'var(--text-muted)' }}>{item.type}</div>
+                  <div style={{ flex: 1 }}>{item.level}</div>
+                  <div style={{ flex: 1, color: `var(--${item.rarity.toLowerCase()})` }}>{item.rarity}</div>
+                  <div style={{ flex: 1 }} className="stat-text">{item.stat}</div>
+                  <div style={{ flex: 1 }}>
+                    {item.type === 'Consumable' ? (
+                      <button onClick={(e) => useItem(item, e)}>Use</button>
+                    ) : (
+                      <button onClick={(e) => equipItem(item, rawIndex, e)}>Equip</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {paginatedItems.length === 0 && (
               <div className="empty-message">No items found.</div>
             )}
@@ -187,7 +231,7 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* ITEM DETAIL MODAL */}
       {selectedItem && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
