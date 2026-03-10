@@ -10,6 +10,8 @@ import Dashboard from './pages/game/Dashboard.tsx';
 import Character from './pages/game/Character.tsx';
 import Inventory from './pages/game/Inventory.tsx';
 
+import { PlayerProvider } from './contexts/PlayerContext.tsx';
+
 const RootRedirect = () => {
   const token = localStorage.getItem('game_token');
   return token ? <Navigate to="/dashboard" /> : <Navigate to="/login" />;
@@ -18,6 +20,7 @@ const RootRedirect = () => {
 const App: React.FC = () => {
   return (
     <Router>
+      <PlayerProvider>
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<RootRedirect />} />
@@ -25,6 +28,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
 
         {/* Private Game Routes */}
+        
         <Route element={<ProtectedRoute />}>
           <Route element={<GameLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -32,10 +36,10 @@ const App: React.FC = () => {
             <Route path="/character" element={<Character />} />
           </Route>
         </Route>
-
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      </PlayerProvider>
     </Router>
   );
 };
