@@ -1,4 +1,27 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { useEquipment } from './EquipmentContext';
+import type { StatBlock } from './types';
+
+type StatModifier = {
+  id: string;
+  bonuses: Partial<StatBlock>;
+  name: string;
+  remainingSteps: number;
+};
+
+type StatKey = keyof StatBlock;
+
+const baseStats: StatBlock = {
+  attack: 5,
+  defense: 5,
+  dexterity: 5,
+};
+
+const emptyStats: StatBlock = {
+  attack: 0,
+  defense: 0,
+  dexterity: 0,
+};
 
 interface PlayerContextType {
   gold: number;
@@ -7,68 +30,189 @@ interface PlayerContextType {
   hp: number;
   maxHp: number;
   skillPoints: number;
+  baseStats: StatBlock;
+  skillStats: StatBlock;
   attack: number;
   defense: number;
   dexterity: number;
   level: number;
+  buffs: StatModifier[];
+  stepsTaken: number;
+  totalDamageDealt: number;
+  totalDamageReceived: number;
+  totalGoldEarned: number;
   addGold: (amount: number) => void;
   spendGold: (amount: number) => void;
   regenHP: (amount: number) => void;
   takeDamage: (amount: number) => void;
   gainExp: (amount: number) => void;
   levelUp: () => void;
+  addBuff: (buff: StatModifier) => void;
+  removeBuff: (id: string) => void;
+  spendSkillPoint: (stat: StatKey) => void;
+  resetSkillPoints: () => void;
+  recordStep: () => void;
+  addDamageDealt: (amount: number) => void;
+  addTempBuff: (name: string, bonuses: Partial<StatBlock>, durationSteps: number) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [gold, setGold] = useState(0);
-    const [hp, setHp] = useState(100);
-    const [maxHp, setMaxHp] = useState(100);
-    const [exp, setExp] = useState(0);
-    const [expThreshold, setExpThreshold] = useState(100);
-    const [level, setLevel] = useState(1);
-    const [skillPoints, setSkillPoints] = useState(0);
-    const [attack, setAttack] = useState(5);
-    const [defense, setDefense] = useState(5);
-    const [dexterity, setDexterity] = useState(5);
+  const { equipment } = useEquipment();
+  const [gold, setGold] = useState(0);
+  const [hp, setHp] = useState(100);
+  const [maxHp, setMaxHp] = useState(100);
+  const [exp, setExp] = useState(0);
+  const [expThreshold, setExpThreshold] = useState(100);
+  const [level, setLevel] = useState(1);
+  const [skillPoints, setSkillPoints] = useState(0);
+  const [skillStats, setSkillStats] = useState<StatBlock>(emptyStats);
+  const [buffs, setBuffs] = useState<StatModifier[]>([]);
+  const [stepsTaken, setStepsTaken] = useState(0);
+  const [totalDamageDealt, setTotalDamageDealt] = useState(0);
+  const [totalDamageReceived, setTotalDamageReceived] = useState(0);
+  const [totalGoldEarned, setTotalGoldEarned] = useState(0);
 
+  const addGold = (amount: number) => {
+    if (amount <= 0) return;
+    setGold(prev => prev + amount);
+    setTotalGoldEarned(prev => prev + amount);
+  };
 
-    const addGold = (amount: number) => setGold(prev => prev + amount);
-    const gainExp = (amount: number) => {
-        const newExp = exp + amount;
+  const gainExp = (amount: number) => {
+    setExp(prev => {
+      const newExp = prev + amount;
+      if (newExp >= expThreshold) {
+        const remainingExp = newExp - expThreshold;
+        levelUp();
+        return remainingExp;
+      }
+      return newExp;
+    });
+  };
 
-        if (newExp >= expThreshold) {
-            const remainingExp = newExp - expThreshold;
-            setExp(remainingExp);
-            levelUp();
-        } else {
-            setExp(newExp);
-        }
+  const takeDamage = (amount: number) => {
+    if (amount <= 0) return;
+    setHp(prev => Math.max(0, prev - amount));
+    setTotalDamageReceived(prev => prev + amount);
+  };
 
-        setExp(prev => prev + amount);
+  const spendGold = (amount: number) => setGold(prev => Math.max(0, prev - amount));
+  const regenHP = (amount: number) => setHp(prev => Math.min(maxHp, prev + amount));
 
-        if (exp >= expThreshold) {
-            setExp(prev => prev - expThreshold);
-            levelUp();
-        }
-    };
-    const takeDamage = (amount: number) => setHp(prev => Math.max(0, prev - amount));
-    const spendGold = (amount: number) => setGold(prev => Math.max(0, prev - amount));
-    const regenHP = (amount: number) => setHp(prev => Math.min(maxHp, prev + amount));
-    const levelUp = () => {
-        setLevel(prev => prev + 1);
-        setSkillPoints(prev => prev + 2);
-        setMaxHp(prev => Math.floor(prev * 1.2));
-        setExpThreshold(prev => Math.floor(prev * 1.2));
+  const levelUp = () => {
+    setLevel(prev => {
+      const next = prev + 1;
+      setSkillPoints(sp => sp + (next % 5 === 0 ? 3 : 2));
+      return next;
+    });
+    setMaxHp(prev => Math.floor(prev * 1.2));
+    setExpThreshold(prev => Math.floor(prev * 1.2));
+  };
+
+  const addBuff = (buff: StatModifier) => setBuffs(prev => [...prev, buff]);
+  const removeBuff = (id: string) => setBuffs(prev => prev.filter(b => b.id !== id));
+
+  const addTempBuff = (name: string, bonuses: Partial<StatBlock>, durationSteps: number) => {
+    if (durationSteps <= 0) return;
+    const id = `${name}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    setBuffs(prev => [...prev, { id, name, bonuses, remainingSteps: durationSteps }]);
+  };
+
+  const spendSkillPoint = (stat: StatKey) => {
+    if (skillPoints <= 0) return;
+    setSkillPoints(prev => prev - 1);
+    setSkillStats(prev => ({ ...prev, [stat]: prev[stat] + 1 }));
+  };
+
+  const resetSkillPoints = () => {
+    const spent = skillStats.attack + skillStats.defense + skillStats.dexterity;
+    if (spent > 0) {
+      setSkillPoints(prev => prev + spent);
+      setSkillStats(emptyStats);
     }
-    
+  };
 
-    return (
-        <PlayerContext.Provider value={{ gold, exp, expThreshold, hp, maxHp, skillPoints, attack, defense, dexterity, level, addGold, spendGold, regenHP, takeDamage, gainExp, levelUp }}>
-        {children}
-        </PlayerContext.Provider>
+  const recordStep = () => {
+    setStepsTaken(prev => prev + 1);
+    setBuffs(prev =>
+      prev
+        .map(buff => ({ ...buff, remainingSteps: buff.remainingSteps - 1 }))
+        .filter(buff => buff.remainingSteps > 0)
     );
+  };
+
+  const addDamageDealt = (amount: number) => {
+    if (amount <= 0) return;
+    setTotalDamageDealt(prev => prev + amount);
+  };
+
+  const derivedStats = useMemo(() => {
+    const equipmentBonus = Object.values(equipment).reduce<StatBlock>((acc, item) => {
+      if (!item?.bonuses) return acc;
+      return {
+        attack: acc.attack + (item.bonuses.attack ?? 0),
+        defense: acc.defense + (item.bonuses.defense ?? 0),
+        dexterity: acc.dexterity + (item.bonuses.dexterity ?? 0),
+      };
+    }, { attack: 0, defense: 0, dexterity: 0 });
+
+    const buffBonus = buffs.reduce<StatBlock>((acc, buff) => {
+      return {
+        attack: acc.attack + (buff.bonuses.attack ?? 0),
+        defense: acc.defense + (buff.bonuses.defense ?? 0),
+        dexterity: acc.dexterity + (buff.bonuses.dexterity ?? 0),
+      };
+    }, { attack: 0, defense: 0, dexterity: 0 });
+
+    return {
+      attack: baseStats.attack + skillStats.attack + equipmentBonus.attack + buffBonus.attack,
+      defense: baseStats.defense + skillStats.defense + equipmentBonus.defense + buffBonus.defense,
+      dexterity: baseStats.dexterity + skillStats.dexterity + equipmentBonus.dexterity + buffBonus.dexterity,
+    };
+  }, [equipment, buffs, skillStats]);
+
+  const { attack, defense, dexterity } = derivedStats;
+
+  return (
+    <PlayerContext.Provider
+      value={{
+        gold,
+        exp,
+        expThreshold,
+        hp,
+        maxHp,
+        skillPoints,
+        baseStats,
+        skillStats,
+        attack,
+        defense,
+        dexterity,
+        level,
+        buffs,
+        stepsTaken,
+        totalDamageDealt,
+        totalDamageReceived,
+        totalGoldEarned,
+        addGold,
+        spendGold,
+        regenHP,
+        takeDamage,
+        gainExp,
+        levelUp,
+        addBuff,
+        removeBuff,
+        spendSkillPoint,
+        resetSkillPoints,
+        recordStep,
+        addDamageDealt,
+        addTempBuff,
+      }}
+    >
+      {children}
+    </PlayerContext.Provider>
+  );
 };
 
 export const usePlayer = () => {
