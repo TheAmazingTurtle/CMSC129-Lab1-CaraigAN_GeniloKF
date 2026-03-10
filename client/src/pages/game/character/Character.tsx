@@ -11,7 +11,6 @@ const Character: React.FC = () => {
     attack,
     defense,
     dexterity,
-    baseStats,
     skillStats,
     spendSkillPoint,
     resetSkillPoints,
