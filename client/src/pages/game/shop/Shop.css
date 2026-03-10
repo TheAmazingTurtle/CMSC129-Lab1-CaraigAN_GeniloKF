@@ -1,0 +1,139 @@
+.shop-page {
+  width: 100%;
+  max-width: 980px;
+  padding: 1.5rem;
+}
+
+.shop-card {
+  background: #1e1e1e;
+  border: 2px solid #ffd700;
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.shop-header p {
+  color: #a1a1aa;
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab-btn {
+  background: #2b2b2b;
+  border: 1px solid #444;
+  color: #e5e7eb;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+}
+
+.tab-btn.active {
+  background: #ffd700;
+  color: #1a1a1a;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.category-card {
+  background: #141414;
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  padding: 0.75rem;
+  text-align: left;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.category-card span {
+  color: #a1a1aa;
+  font-size: 0.85rem;
+}
+
+.category-card.active {
+  border-color: #ffd700;
+  box-shadow: 0 0 0 1px #ffd700 inset;
+}
+
+.list-panel {
+  background: #141414;
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.list-header,
+.list-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.8fr 0.9fr 0.9fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+}
+
+.list-header {
+  background: #1b1b1b;
+  color: #a1a1aa;
+  font-weight: 600;
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.list-row {
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.list-row:last-child {
+  border-bottom: none;
+}
+
+.list-row button {
+  justify-self: end;
+}
+
+.muted {
+  color: #9aa3b2;
+}
+
+.price {
+  color: #ffd700;
+}
+
+.empty-message {
+  padding: 1.2rem;
+  text-align: center;
+  color: #a1a1aa;
+}
+
+.rarity.common { color: var(--common); }
+.rarity.uncommon { color: var(--uncommon); }
+.rarity.rare { color: var(--rare); }
+.rarity.epic { color: var(--epic); }
+.rarity.legendary { color: var(--legendary); }
+
+@media (max-width: 720px) {
+  .list-header {
+    display: none;
+  }
+
+  .list-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .list-row button {
+    justify-self: start;
+  }
+}

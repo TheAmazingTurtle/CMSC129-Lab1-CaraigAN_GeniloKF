@@ -1,0 +1,275 @@
+.event-log {
+  background: #1e1e1e;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #ffd700;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 3rem;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+.toast-stack {
+  position: absolute;
+  right: 1.5rem;
+  top: 6.5rem;
+  display: grid;
+  gap: 0.5rem;
+  z-index: 20;
+}
+
+.toast {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #333;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  color: #ffd700;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  animation: toastSlide 2.6s ease forwards;
+}
+
+@keyframes toastSlide {
+  0% { opacity: 0; transform: translateX(20px); }
+  15% { opacity: 1; transform: translateX(0); }
+  85% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(20px); }
+}
+
+.buff-panel {
+  position: absolute;
+  left: 1.5rem;
+  top: 6.5rem;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 0.75rem;
+  min-width: 200px;
+}
+
+.buff-panel h4 {
+  color: #ffd700;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.buff-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.buff-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #e5e7eb;
+}
+
+.buff-steps {
+  color: #a1a1aa;
+}
+
+.step-btn-wrapper {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+}
+
+.step-btn {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 8px solid #444;
+  background: #2c3e50;
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 1;
+}
+
+.step-btn:hover:not(:disabled) {
+  background: #34495e;
+  border-color: #ffd700;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 25px rgba(255, 215, 0, 0.3);
+}
+
+.step-btn:disabled {
+  background: #1a1a1a;
+  color: #555;
+  border-color: #222;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* === Crawling Border Animation === */
+.cooldown-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2; /* Sits right on top of the button's standard border */
+  transform: rotate(-90deg); /* Starts the animation at 12 o'clock */
+}
+
+.cooldown-circle {
+  fill: none;
+  stroke: #ffd700; /* Yellow */
+  stroke-width: 8px; /* Matches the button border exactly */
+  stroke-linecap: butt;
+  stroke-dasharray: 541; /* Circumference of an 86px radius circle */
+  stroke-dashoffset: 541;
+  animation: crawl linear forwards;
+}
+
+@keyframes crawl {
+  0% { stroke-dashoffset: 541; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* === Encounter Card Redesign === */
+.encounter-card {
+  background: #1e1e1e;
+  border: 2px solid #c0392b;
+  border-radius: 12px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(192, 57, 43, 0.2);
+  animation: slideUp 0.3s ease-out;
+  display: grid;
+  gap: 1.1rem;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.encounter-card h3 {
+  color: #ff4d4d;
+  font-size: 1.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.enemy-hp {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.enemy-hp-bar {
+  flex: 1;
+  height: 8px;
+  background: #2b2b2b;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.enemy-hp-fill {
+  height: 100%;
+  background: #ff4d4d;
+  transition: width 0.25s ease;
+}
+
+.enemy-stats {
+  display: flex;
+  justify-content: space-between;
+  color: #a1a1aa;
+  font-size: 0.9rem;
+}
+
+.combat-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.combat-actions .fight-btn,
+.combat-actions .skip-btn {
+  flex: 1;
+  padding: 0.75rem;
+}
+
+.combat-consumables {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.combat-consumables h4 {
+  color: #ffd700;
+  font-size: 0.95rem;
+}
+
+.combat-consumables button {
+  background: #333;
+  border: 1px solid #555;
+  color: #eee;
+}
+
+.combat-consumables button:hover {
+  background: #444;
+}
+
+.risk-text {
+  color: #a1a1aa;
+  font-size: 0.9rem;
+}
+
+.loot-preview {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.8rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.fight-btn, .skip-btn {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.fight-btn {
+  background: #c0392b;
+  color: white;
+}
+
+.fight-btn:hover {
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+}
+
+.skip-btn {
+  background: #333;
+  color: #aaa;
+  border: 1px solid #555;
+}
+
+.skip-btn:hover {
+  background: #444;
+  color: white;
+  transform: translateY(-2px);
+}
