@@ -12,6 +12,7 @@ import GetState from './routes/getStateRoute.ts';
 import Save     from './routes/saveRoute.ts';
 import Step     from './routes/stepRoute.ts';
 import Equip    from './routes/equipRoute.ts';
+import Sell     from './routes/sellRoute.ts';
 
 dotenv.config();
 const app = express();
@@ -30,6 +31,7 @@ app.get('/api/game/state',  AuthenticateToken, GetState);
 app.post('/api/game/save',  AuthenticateToken, Save);
 app.post('/api/game/step',  AuthenticateToken, Step);
 app.post('/api/game/equip', AuthenticateToken, Equip);
+app.post('/api/game/sell',  AuthenticateToken, Sell);
 
 connectDB();
 

@@ -8,11 +8,18 @@ import './Inventory.css';
 
 const ITEMS_PER_PAGE = 5;
 
+// Mirrors sellRoute.ts — used for display only. Server is authoritative for actual gold.
+const RARITY_SELL_MULTIPLIER: Record<Rarity, number> = {
+  Common: 1.0, Uncommon: 1.5, Rare: 2.5, Epic: 4.0, Legendary: 7.0,
+};
+const getSellPrice = (item: Item): number =>
+  Math.floor(item.level * 10 * RARITY_SELL_MULTIPLIER[item.rarity]);
+
 const Inventory: React.FC = () => {
   const {
     inventory, setInventory,
     equippedItems, setEquippedItems,
-    setLastSaved,
+    setGold, setLastSaved,
     savePlayerState,
   } = usePlayer();
 
@@ -23,25 +30,23 @@ const Inventory: React.FC = () => {
   const [filterType, setFilterType]       = useState<ItemType | 'All'>('All');
   const [sortBy, setSortBy]               = useState<'level' | 'rarity'>('level');
   const [currentPage, setCurrentPage]     = useState(1);
+  const [confirmSell, setConfirmSell]     = useState<{ item: Item; rawIndex: number } | null>(null);
 
   const flashSaveStatus = (msg: string) => {
     setSaveStatus(msg);
-    setTimeout(() => setSaveStatus(''), 2000);
+    setTimeout(() => setSaveStatus(''), 2500);
   };
 
   const getToken = () => localStorage.getItem('game_token') ?? '';
 
-  // Calls POST /api/game/equip and syncs context from the authoritative server response.
-  // The server splices by inventoryIndex — not by id — so duplicate items are handled safely.
-  // No setState → savePlayerState race condition: the DB write happens before we update context.
+  // --- Equip / Unequip ---
+  // Calls POST /api/game/equip — all mutations are atomic on the server.
+  // Context is hydrated from the response, never from optimistic setState.
   const postEquip = async (body: object): Promise<boolean> => {
     try {
       const res = await fetch('http://localhost:5000/api/game/equip', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getToken()}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         body: JSON.stringify(body),
       });
       if (!res.ok) {
@@ -50,7 +55,6 @@ const Inventory: React.FC = () => {
         return false;
       }
       const data = await res.json();
-      // Update context from server response — always authoritative
       setInventory(data.inventory);
       setEquippedItems(data.equippedItems);
       if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
@@ -61,13 +65,12 @@ const Inventory: React.FC = () => {
     }
   };
 
-  // inventoryIndex is the item's position in the RAW inventory array (not the filtered/paginated view).
-  // This is what the server needs to splice by index safely.
+  // inventoryIndex is the item's position in the RAW inventory array.
+  // The server splices by this index — immune to duplicate-id collisions.
   const equipItem = async (item: Item, inventoryIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (item.type === 'Consumable') return;
-    const slot = item.type as EquipmentSlot;
-    const ok = await postEquip({ action: 'equip', inventoryIndex, slot });
+    const ok = await postEquip({ action: 'equip', inventoryIndex, slot: item.type });
     flashSaveStatus(ok ? '✓ Equipped & saved' : '⚠ Equip failed');
   };
 
@@ -76,12 +79,12 @@ const Inventory: React.FC = () => {
     flashSaveStatus(ok ? '✓ Unequipped & saved' : '⚠ Unequip failed');
   };
 
+  // --- Use (consumables) ---
   const useItem = async (item: Item, e: React.MouseEvent) => {
     e.stopPropagation();
     alert(`You used: ${item.name}!`);
-
     setInventory(prev => {
-      // Remove only the first occurrence — safe for duplicate items
+      // Remove only the first occurrence — safe for duplicates
       const idx = prev.findIndex(i => i.id === item.id);
       if (idx === -1) return prev;
       const next = [...prev];
@@ -89,16 +92,46 @@ const Inventory: React.FC = () => {
       return next;
     });
     if (selectedItem?.id === item.id) setSelectedItem(null);
-
     const result = await savePlayerState();
     flashSaveStatus(result ? '✓ Item used & saved' : '⚠ Item use saved locally only');
   };
 
+  // --- Sell ---
+  const confirmSellItem = (item: Item, rawIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmSell({ item, rawIndex });
+  };
+
+  const executeSell = async () => {
+    if (!confirmSell) return;
+    const { rawIndex } = confirmSell;
+    setConfirmSell(null);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/game/sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify({ inventoryIndex: rawIndex }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        flashSaveStatus(`⚠ ${err.message ?? 'Sell failed'}`);
+        return;
+      }
+      const data = await res.json();
+      setInventory(data.inventory);
+      setGold(data.gold);
+      if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
+      flashSaveStatus(`✓ Sold for ${data.goldEarned} gold`);
+    } catch {
+      flashSaveStatus('⚠ Cannot reach server');
+    }
+  };
+
+  // --- Display helpers ---
   const processedItems = useMemo(() => {
     let result = [...inventory];
-    if (filterType !== 'All') {
-      result = result.filter(item => item.type === filterType);
-    }
+    if (filterType !== 'All') result = result.filter(item => item.type === filterType);
     result.sort((a, b) => {
       if (sortBy === 'level') return b.level - a.level;
       const rarityWeight: Record<Rarity, number> = {
@@ -119,8 +152,26 @@ const Inventory: React.FC = () => {
     if (currentPage > totalPages) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
+  // Resolve the item's true index in the raw inventory array.
+  // Counts prior occurrences of the same id in paginatedItems to correctly
+  // identify which duplicate is being acted on.
+  const resolveRawIndex = (item: Item, positionInPage: number): number => {
+    const occurrencesBeforeThis = paginatedItems
+      .slice(0, positionInPage)
+      .filter(i => i.id === item.id).length;
+    let found = 0;
+    return inventory.findIndex(i => {
+      if (i.id !== item.id) return false;
+      if (found === occurrencesBeforeThis) return true;
+      found++;
+      return false;
+    });
+  };
+
   return (
     <div className="inventory-page">
+
+      {/* Toast notification */}
       {saveStatus && (
         <div style={{
           position: 'fixed', bottom: '4rem', left: '50%', transform: 'translateX(-50%)',
@@ -182,24 +233,13 @@ const Inventory: React.FC = () => {
             <div style={{ flex: 1 }}>Lvl</div>
             <div style={{ flex: 1 }}>Rarity</div>
             <div style={{ flex: 1 }}>Stat</div>
-            <div style={{ flex: 1 }}>Action</div>
+            <div style={{ flex: 1.5 }}>Actions</div>
           </div>
 
           <div className="items-container">
-            {paginatedItems.map((item) => {
-              // Resolve the item's true index in the raw inventory array.
-              // We track how many times this id has appeared so far in paginatedItems
-              // to correctly identify which duplicate we're looking at.
-              const occurrencesBeforeThis = paginatedItems
-                .slice(0, paginatedItems.indexOf(item))
-                .filter(i => i.id === item.id).length;
-              let found = 0;
-              const rawIndex = inventory.findIndex(i => {
-                if (i.id !== item.id) return false;
-                if (found === occurrencesBeforeThis) return true;
-                found++;
-                return false;
-              });
+            {paginatedItems.map((item, positionInPage) => {
+              const rawIndex = resolveRawIndex(item, positionInPage);
+              const sellPrice = getSellPrice(item);
 
               return (
                 <div key={`${item.id}-${rawIndex}`} className="inventory-row" onClick={() => setSelectedItem(item)}>
@@ -208,12 +248,19 @@ const Inventory: React.FC = () => {
                   <div style={{ flex: 1 }}>{item.level}</div>
                   <div style={{ flex: 1, color: `var(--${item.rarity.toLowerCase()})` }}>{item.rarity}</div>
                   <div style={{ flex: 1 }} className="stat-text">{item.stat}</div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1.5, display: 'flex', gap: '0.4rem' }}>
                     {item.type === 'Consumable' ? (
                       <button onClick={(e) => useItem(item, e)}>Use</button>
                     ) : (
                       <button onClick={(e) => equipItem(item, rawIndex, e)}>Equip</button>
                     )}
+                    <button
+                      onClick={(e) => confirmSellItem(item, rawIndex, e)}
+                      style={{ color: '#f0a500', borderColor: '#f0a500' }}
+                      title={`Sell for ${sellPrice}g`}
+                    >
+                      {sellPrice}g
+                    </button>
                   </div>
                 </div>
               );
@@ -231,8 +278,34 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
+      {/* SELL CONFIRMATION MODAL */}
+      {confirmSell && (
+        <div className="modal-overlay" onClick={() => setConfirmSell(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Sell Item?</h2>
+            <p style={{ margin: '1rem 0', color: 'var(--text-muted)' }}>
+              <strong style={{ color: `var(--${confirmSell.item.rarity.toLowerCase()})` }}>
+                {confirmSell.item.name}
+              </strong>
+            </p>
+            <p>You will receive <strong style={{ color: '#f0a500' }}>{getSellPrice(confirmSell.item)} gold</strong>.</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+              This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+              <button onClick={executeSell} style={{ flex: 1, padding: '0.8rem', color: '#f0a500', borderColor: '#f0a500' }}>
+                Confirm Sell
+              </button>
+              <button onClick={() => setConfirmSell(null)} style={{ flex: 1, padding: '0.8rem' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ITEM DETAIL MODAL */}
-      {selectedItem && (
+      {selectedItem && !confirmSell && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 style={{ color: `var(--${selectedItem.rarity.toLowerCase()})` }}>{selectedItem.name}</h2>
@@ -241,6 +314,9 @@ const Inventory: React.FC = () => {
               <span>{selectedItem.type}</span>
               <span>{selectedItem.rarity}</span>
             </div>
+            <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#f0a500' }}>
+              Sell value: {getSellPrice(selectedItem)} gold
+            </p>
             <button
               onClick={() => setSelectedItem(null)}
               style={{ marginTop: '2rem', width: '100%', padding: '0.8rem' }}

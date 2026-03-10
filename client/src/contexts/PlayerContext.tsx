@@ -32,6 +32,7 @@ interface PlayerContextType {
   lastSaved: Date | null;
   addGold: (amount: number) => void;
   spendGold: (amount: number) => void;
+  setGold: React.Dispatch<React.SetStateAction<number>>;
   // Spends gold, saves to DB, and updates the lastSaved timestamp.
   // Use this instead of spendGold wherever a gold-spend is a save milestone.
   spendGoldAndSave: (amount: number) => Promise<void>;
@@ -218,7 +219,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           skillPoints, attack, defense, dexterity, level,
           isLoading, inventory, equippedItems, lastSaved,
           addGold, spendGold, spendGoldAndSave, regenHP, takeDamage, gainExp, levelUp,
-          setInventory, setEquippedItems, setLastSaved,
+          setGold, setInventory, setEquippedItems, setLastSaved,
           loadPlayerState, applyServerStats, savePlayerState,
         }}>
           {children}
