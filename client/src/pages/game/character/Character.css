@@ -1,0 +1,162 @@
+.character-card {
+  background: #1e1e1e;
+  border: 2px solid #ffd700;
+  padding: 1.25rem;
+  border-radius: 12px;
+  width: min(520px, 100%);
+}
+
+.character-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.character-meta h2 {
+  margin-bottom: 0.25rem;
+}
+
+.character-meta p {
+  color: #a1a1aa;
+  font-size: 0.9rem;
+}
+
+.skill-points {
+  margin-top: 0.25rem;
+}
+
+.character-divider {
+  height: 1px;
+  background: #333;
+  margin: 0.75rem 0;
+}
+
+.attributes h3,
+.adventure-stats h3 {
+  margin-bottom: 0.5rem;
+  color: #ffd700;
+  font-size: 1rem;
+}
+
+.stat-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.stat-base {
+  font-size: 0.75rem;
+  color: #a1a1aa;
+}
+
+.stat-total {
+  font-weight: bold;
+}
+
+.stat-info {
+  text-align: left;
+}
+
+.stat-skill {
+  color: #ffd700;
+  font-size: 1.3rem;
+  white-space: nowrap;
+}
+
+.stat-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+}
+
+.adventure-stats {
+  text-align: left;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.stats-grid div {
+  background: #141414;
+  border: 1px solid #2b2b2b;
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stats-grid span {
+  color: #a1a1aa;
+  font-size: 0.85rem;
+}
+
+.stats-grid strong {
+  font-size: 1.1rem;
+}
+
+.character-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.reset-btn {
+  background: #2b2b2b;
+  color: #e5e7eb;
+  border: 1px solid #555;
+  flex: 1;
+}
+
+.reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.avatar-circle {
+  font-size: 2.6rem;
+  background: #333;
+  width: 72px;
+  height: 72px;
+  line-height: 72px;
+  border-radius: 50%;
+  margin: 0;
+  text-align: center;
+}
+
+.logout-btn {
+  background: #444;
+  color: #ff4d4d;
+  border: 1px solid #ff4d4d;
+  padding: 10px 16px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.logout-btn:hover {
+  background: #ff4d4d;
+  color: white;
+}
+
+.delete-btn {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  background: transparent;
+  color: #ff8a8a;
+  border: 1px dashed #ff4d4d;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: rgba(255, 77, 77, 0.12);
+}
