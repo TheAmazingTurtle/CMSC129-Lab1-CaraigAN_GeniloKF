@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
   const [lastAction, setLastAction]   = useState("The road ahead is long...");
   const [encounter, setEncounter]     = useState<ServerEncounter | null>(null);
 
-  const { hp, applyServerStats, setLastSaved } = usePlayer();
+  const { hp, applyServerStats, setLastSaved, setInventory } = usePlayer();
 
   const getToken = () => localStorage.getItem('game_token') ?? '';
 
@@ -67,6 +67,7 @@ const Dashboard: React.FC = () => {
         // Safe walk — server updated stats and saved atomically
         setLastAction(data.message);
         applyServerStats(data.updatedStats);
+        if (data.updatedStats.inventory) setInventory(data.updatedStats.inventory);
         if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
       }
     }
@@ -86,6 +87,7 @@ const Dashboard: React.FC = () => {
     if (data) {
       setLastAction(data.message);
       applyServerStats(data.updatedStats);
+      if (data.updatedStats.inventory) setInventory(data.updatedStats.inventory);
       // Covers level-up and player death — stepRoute saved atomically
       if (data.lastSaved) setLastSaved(new Date(data.lastSaved));
     }
