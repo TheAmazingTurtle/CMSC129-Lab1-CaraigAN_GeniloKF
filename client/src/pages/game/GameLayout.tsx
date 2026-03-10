@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { usePlayer } from '../../contexts/PlayerContext.tsx';
 import './Dashboard.css';
 
 import ProgressBar from './props/ProgressBar.tsx';
 
-
 const GameLayout: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const { level, gold, exp, expThreshold, hp, maxHp } = usePlayer();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
+  const { level, gold, exp, expThreshold, hp, maxHp, isLoading, loadPlayerState } = usePlayer();
+
+  // Load saved state on any fresh page entry (login redirect OR direct URL / refresh).
+  // This is the fix for Stage 4 TC4 — Login calls loadPlayerState too, but a
+  // second call is harmless and ensures refreshes never show stale defaults.
+  useEffect(() => {
+    loadPlayerState();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (isLoading) {
+    return (
+      <div className="dashboard-container" style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100vh', flexDirection: 'column', gap: '1rem',
+      }}>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>
+          ⚔️ Loading your hero...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -28,18 +47,18 @@ const GameLayout: React.FC = () => {
       </header>
 
       <main className="game-area">
-        <Outlet /> 
+        <Outlet />
       </main>
 
       <footer className="game-nav">
-        <button 
-          className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`} 
+        <button
+          className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
           onClick={() => navigate('/dashboard')}>Travel</button>
-        <button 
-          className={`nav-item ${location.pathname === '/inventory' ? 'active' : ''}`} 
+        <button
+          className={`nav-item ${location.pathname === '/inventory' ? 'active' : ''}`}
           onClick={() => navigate('/inventory')}>Bag</button>
-        <button 
-          className={`nav-item ${location.pathname === '/character' ? 'active' : ''}`} 
+        <button
+          className={`nav-item ${location.pathname === '/character' ? 'active' : ''}`}
           onClick={() => navigate('/character')}>Hero</button>
       </footer>
     </div>
