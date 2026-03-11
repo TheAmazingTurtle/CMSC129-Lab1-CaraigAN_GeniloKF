@@ -2,24 +2,31 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
-export interface IGetUserAuthInfoRequest extends express.Request {
-  user: string | jwt.JwtPayload | undefined
-}
-
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
-const AuthenticateToken = (req: IGetUserAuthInfoRequest, res: express.Response, next: express.NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+type JwtPayload = {
+  userId?: string;
+  id?: string;
+  _id?: string;
+};
 
-    if (!token) return res.status(401).json({ message: "No entry without a soul (token)." });
+const AuthenticateToken: express.RequestHandler = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ message: "Your session has expired." });
-        req.user = user;
-        next();
-    });
+  if (!token) return res.status(401).json({ message: 'No entry without a soul (token).' });
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ message: 'Your session has expired.' });
+
+    const payload = (decoded && typeof decoded === 'object') ? (decoded as JwtPayload) : undefined;
+    const rawUserId = payload?.userId ?? payload?.id ?? payload?._id;
+    if (!rawUserId) return res.status(401).json({ message: 'Unauthorized' });
+
+    res.locals.userId = String(rawUserId);
+    next();
+  });
 };
 
 export default AuthenticateToken;

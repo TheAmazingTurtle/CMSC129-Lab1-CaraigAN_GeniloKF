@@ -7,6 +7,7 @@ import Signup from './routes/signupRoute.ts';
 import Login from './routes/loginRoute.ts';
 import Logout from './routes/logoutRoute.ts';
 import DeleteAccount from './routes/deleteAccountRoute.ts';
+import SaveRoute from './routes/saveRoute.ts';
 // import AuthenticateToken, { IGetUserAuthInfoRequest } from './middleware/authenticateToken.ts';
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use('/api/auth/signup', Signup);
 app.use('/api/auth/login', Login);
 app.use('/api/auth/logout', Logout);
 app.use('/api/auth/delete', DeleteAccount);
+app.use('/api/player', SaveRoute);
 
 // app.use('api/game/step', AuthenticateToken)
 
@@ -27,7 +29,7 @@ connectDB();
 
 // Existing Test Route
 app.get('/api/test', (req, res) => {
-  res.json({ message: "Backend is working!" });
+  res.json({ message: "Backend is woking!" });
 });
 
 // Error Handling Middleware (Optional but recommended)

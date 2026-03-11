@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 
-import User from "../models/User.ts";
+import { getBackupUserModel, getActiveUserModel, isPrimaryConnected, isBackupConnected } from '../models/UserBackup.ts';
 
 const Login = async (req: express.Request, res: express.Response) => {
   try {
@@ -12,8 +12,23 @@ const Login = async (req: express.Request, res: express.Response) => {
 
     const { email, password } = req.body;
 
+    const primaryConnected = isPrimaryConnected();
+    const backupConnected = isBackupConnected();
+    if (!primaryConnected && !backupConnected) {
+      return res.status(503).json({ message: 'Database unavailable' });
+    }
+
     // 1. Find user
-    const user = await User.findOne({ email });
+    const ActiveUser = getActiveUserModel();
+    let user = await ActiveUser.findOne({ email });
+
+    if (!user && primaryConnected && backupConnected) {
+      const BackupUser = getBackupUserModel();
+      if (BackupUser) {
+        user = await BackupUser.findOne({ email });
+      }
+    }
+
     if (!user) return res.status(400).json({ message: "User not found" });
 
     // 2. Check password
