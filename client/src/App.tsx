@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import Login from './pages/auth/Login.tsx';
@@ -17,9 +17,31 @@ import { ItemProvider } from './contexts/ItemContext.tsx';
 import { EnemyProvider } from './contexts/EnemyContext.tsx';
 import GameSaveGate from './contexts/GameSaveGate.tsx';
 
-const RootRedirect = () => {
-  const token = localStorage.getItem('game_token');
-  return token ? <Navigate to="/dashboard" /> : <Navigate to="/login" />;
+const RootRedirect: React.FC = () => {
+  const [status, setStatus] = useState<'checking' | 'authed'>('checking');
+
+  useEffect(() => {
+    const token = localStorage.getItem('game_token');
+    if (!token) {
+      setStatus('checking');
+      return;
+    }
+
+    fetch('http://localhost:5000/api/player', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        setStatus(res.ok ? 'authed' : 'checking');
+      })
+      .catch(() => {
+        setStatus('checking');
+      });
+  }, []);
+
+  if (status === 'checking') return <Navigate to="/login" />;
+  return <Navigate to="/dashboard" />;
 };
 
 const App: React.FC = () => {
