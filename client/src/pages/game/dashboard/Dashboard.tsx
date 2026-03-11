@@ -217,7 +217,7 @@ const Dashboard: React.FC = () => {
     <div className="page-content dashboard-page">
       <div className="dashboard-grid">
         <section className="dashboard-left">
-          <QuestPanel />
+          <QuestPanel onRewardToast={pushToast} />
         </section>
 
         <section className="dashboard-right">

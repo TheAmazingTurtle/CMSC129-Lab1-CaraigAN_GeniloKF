@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { usePlayer } from '../contexts/PlayerContext';
 import { getStageQuestSet, getQuestProgress } from '../domain/quests';
 
-const QuestPanel: React.FC = () => {
+type QuestPanelProps = {
+  onRewardToast?: (message: string) => void;
+};
+
+const QuestPanel: React.FC<QuestPanelProps> = ({ onRewardToast }) => {
   const {
     level,
     stepsTaken,
@@ -16,7 +20,6 @@ const QuestPanel: React.FC = () => {
   const { stage, quests } = useMemo(() => getStageQuestSet(level), [level]);
   const storageKey = `quests_stage_${stage.id}`;
   const [claimed, setClaimed] = useState<string[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(storageKey);
@@ -56,16 +59,16 @@ const QuestPanel: React.FC = () => {
 
     const next = [...claimed, questId];
     saveClaimed(next);
-    setMessage(`Claimed ${quest.reward.gold} gold and ${quest.reward.exp} XP.`);
-    window.setTimeout(() => setMessage(null), 2200);
+    onRewardToast?.(`+${quest.reward.gold} gold`);
+    onRewardToast?.(`+${quest.reward.exp} XP`);
   };
 
   return (
     <div className="quest-panel">
       <div className="quest-header">
         <h3>Stage Quests</h3>
-        {message && <span className="quest-toast">{message}</span>}
       </div>
+
       <div className="quest-list">
         {quests.map(quest => {
           const progress = getQuestProgress(quest, stats);
@@ -77,10 +80,6 @@ const QuestPanel: React.FC = () => {
               <div className="quest-info">
                 <strong>{quest.label}</strong>
                 <span className="quest-progress">{Math.min(progress, quest.target)} / {quest.target}</span>
-              </div>
-              <div className="quest-reward">
-                <span>+{quest.reward.gold} gold</span>
-                <span>+{quest.reward.exp} XP</span>
               </div>
               <button
                 className="quest-claim"
