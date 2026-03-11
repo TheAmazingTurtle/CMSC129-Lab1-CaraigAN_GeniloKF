@@ -32,7 +32,6 @@ const STAGES: Stage[] = [
     minLevel: 1,
     maxLevel: 5,
     quests: [
-      { id: 's1-steps', label: 'Take 50 steps', type: 'steps', target: 50, reward: { gold: 20, exp: 10 } },
       { id: 's1-gold', label: 'Earn 120 gold', type: 'gold', target: 120, reward: { gold: 35, exp: 15 } },
       { id: 's1-damage', label: 'Deal 80 damage', type: 'damage', target: 80, reward: { gold: 25, exp: 12 } },
       { id: 's1-enemies', label: 'Defeat 3 enemies', type: 'enemies', target: 3, reward: { gold: 30, exp: 12 } },
@@ -52,7 +51,6 @@ const STAGES: Stage[] = [
     minLevel: 6,
     maxLevel: 10,
     quests: [
-      { id: 's2-steps', label: 'Take 120 steps', type: 'steps', target: 120, reward: { gold: 45, exp: 20 } },
       { id: 's2-gold', label: 'Earn 260 gold', type: 'gold', target: 260, reward: { gold: 70, exp: 28 } },
       { id: 's2-damage', label: 'Deal 180 damage', type: 'damage', target: 180, reward: { gold: 55, exp: 25 } },
       { id: 's2-enemies', label: 'Defeat 6 enemies', type: 'enemies', target: 6, reward: { gold: 60, exp: 24 } },
@@ -73,7 +71,6 @@ const STAGES: Stage[] = [
     minLevel: 11,
     maxLevel: 15,
     quests: [
-      { id: 's3-steps', label: 'Take 200 steps', type: 'steps', target: 200, reward: { gold: 75, exp: 35 } },
       { id: 's3-gold', label: 'Earn 420 gold', type: 'gold', target: 420, reward: { gold: 110, exp: 45 } },
       { id: 's3-damage', label: 'Deal 300 damage', type: 'damage', target: 300, reward: { gold: 85, exp: 40 } },
       { id: 's3-enemies', label: 'Defeat 10 enemies', type: 'enemies', target: 10, reward: { gold: 95, exp: 38 } },
@@ -95,7 +92,6 @@ const STAGES: Stage[] = [
     minLevel: 16,
     maxLevel: 20,
     quests: [
-      { id: 's4-steps', label: 'Take 300 steps', type: 'steps', target: 300, reward: { gold: 110, exp: 55 } },
       { id: 's4-gold', label: 'Earn 620 gold', type: 'gold', target: 620, reward: { gold: 150, exp: 65 } },
       { id: 's4-damage', label: 'Deal 450 damage', type: 'damage', target: 450, reward: { gold: 130, exp: 60 } },
       { id: 's4-enemies', label: 'Defeat 14 enemies', type: 'enemies', target: 14, reward: { gold: 140, exp: 55 } },
@@ -117,7 +113,6 @@ const STAGES: Stage[] = [
     minLevel: 21,
     maxLevel: 25,
     quests: [
-      { id: 's5-steps', label: 'Take 450 steps', type: 'steps', target: 450, reward: { gold: 160, exp: 80 } },
       { id: 's5-gold', label: 'Earn 900 gold', type: 'gold', target: 900, reward: { gold: 220, exp: 95 } },
       { id: 's5-damage', label: 'Deal 650 damage', type: 'damage', target: 650, reward: { gold: 200, exp: 90 } },
       { id: 's5-enemies', label: 'Defeat 20 enemies', type: 'enemies', target: 20, reward: { gold: 210, exp: 85 } },
