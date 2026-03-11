@@ -4,7 +4,7 @@ import { usePlayer } from '../../../contexts/PlayerContext.tsx';
 import { useItems } from '../../../contexts/ItemContext.tsx';
 import { useEquipment } from '../../../contexts/EquipmentContext.tsx';
 import { useEnemy } from '../../../contexts/EnemyContext.tsx';
-import { getDailyQuestSet } from '../../../domain/quests';
+import { getStageForLevel } from '../../../domain/stages';
 import './GameLayout.css';
 
 import ProgressBar from '../components/ProgressBar.tsx';
@@ -25,8 +25,8 @@ const GameLayout: React.FC = () => {
     : 'Not saved yet';
 
   const handleRestart = () => {
-    const { dateKey } = getDailyQuestSet();
-    localStorage.removeItem(`quests_${dateKey}`);
+    const stage = getStageForLevel(level);
+    localStorage.removeItem(`quests_stage_${stage.id}`);
     clearEncounter();
     resetPlayer();
     resetInventory();

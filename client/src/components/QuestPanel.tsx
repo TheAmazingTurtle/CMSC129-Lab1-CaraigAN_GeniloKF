@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { usePlayer } from '../contexts/PlayerContext';
-import { getDailyQuestSet, getQuestProgress } from '../domain/quests';
+import { getStageQuestSet, getQuestProgress } from '../domain/quests';
 
 const QuestPanel: React.FC = () => {
   const {
+    level,
     stepsTaken,
     totalGoldEarned,
     totalDamageDealt,
@@ -12,8 +13,8 @@ const QuestPanel: React.FC = () => {
     gainExp,
   } = usePlayer();
 
-  const { dateKey, quests } = useMemo(() => getDailyQuestSet(), []);
-  const storageKey = `quests_${dateKey}`;
+  const { stage, quests } = useMemo(() => getStageQuestSet(level), [level]);
+  const storageKey = `quests_stage_${stage.id}`;
   const [claimed, setClaimed] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -62,7 +63,7 @@ const QuestPanel: React.FC = () => {
   return (
     <div className="quest-panel">
       <div className="quest-header">
-        <h3>Daily Quests</h3>
+        <h3>Stage Quests</h3>
         {message && <span className="quest-toast">{message}</span>}
       </div>
       <div className="quest-list">

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useEquipment, type EquipmentSlot, type Item, type ItemType, type Rarity } from '../../../contexts/EquipmentContext';
 import { useItems } from '../../../contexts/ItemContext';
 import { usePlayer } from '../../../contexts/PlayerContext';
@@ -19,30 +19,16 @@ type StatChip = {
   variant: 'positive' | 'negative' | 'neutral';
 };
 
-type PendingTrash = Record<number, Item>;
-
-type PendingTimers = Record<number, number>;
-
 const Inventory: React.FC = () => {
   const { equipment, equipItem, unequipItem } = useEquipment();
-  const { inventory, removeItem, addItem } = useItems();
+  const { inventory, removeItem, addItem, sellItem } = useItems();
   const { regenHP, addTempBuff, hp } = usePlayer();
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [throwNotice, setThrowNotice] = useState<Item | null>(null);
-  const [pendingTrash, setPendingTrash] = useState<PendingTrash>({});
-  const throwTimeoutRef = useRef<PendingTimers>({});
 
   // --- Filter & Sort State ---
   const [filterType, setFilterType] = useState<ItemType | 'All'>('All');
   const [sortBy, setSortBy] = useState<'level' | 'rarity'>('level');
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    return () => {
-      Object.values(throwTimeoutRef.current).forEach((id) => window.clearTimeout(id));
-      throwTimeoutRef.current = {};
-    };
-  }, []);
 
   // --- Sorting & Filtering Logic ---
   const processedItems = useMemo(() => {
@@ -52,9 +38,6 @@ const Inventory: React.FC = () => {
     if (filterType !== 'All') {
       result = result.filter(item => item.type === filterType);
     }
-
-    // Hide pending trash items
-    result = result.filter(item => !pendingTrash[item.id]);
 
     // Sort
     result.sort((a, b) => {
@@ -67,7 +50,7 @@ const Inventory: React.FC = () => {
     });
 
     return result;
-  }, [inventory, filterType, sortBy, pendingTrash]);
+  }, [inventory, filterType, sortBy]);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(processedItems.length / ITEMS_PER_PAGE) || 1;
@@ -133,50 +116,6 @@ const Inventory: React.FC = () => {
     }
 
     removeItem(item.id);
-  };
-
-  const handleThrowItem = (item: Item) => {
-    if (pendingTrash[item.id]) return;
-
-    setPendingTrash(prev => ({ ...prev, [item.id]: item }));
-    setThrowNotice(item);
-
-    if (throwTimeoutRef.current[item.id]) {
-      window.clearTimeout(throwTimeoutRef.current[item.id]);
-    }
-
-    throwTimeoutRef.current[item.id] = window.setTimeout(() => {
-      setPendingTrash(prev => {
-        if (!prev[item.id]) return prev;
-        const next = { ...prev };
-        delete next[item.id];
-        return next;
-      });
-      removeItem(item.id);
-      if (throwTimeoutRef.current[item.id]) {
-        delete throwTimeoutRef.current[item.id];
-      }
-      setThrowNotice(prev => (prev?.id === item.id ? null : prev));
-    }, 4000);
-  };
-
-  const handleUndoThrow = () => {
-    if (!throwNotice) return;
-
-    const id = throwNotice.id;
-    setPendingTrash(prev => {
-      if (!prev[id]) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-
-    if (throwTimeoutRef.current[id]) {
-      window.clearTimeout(throwTimeoutRef.current[id]);
-      delete throwTimeoutRef.current[id];
-    }
-
-    setThrowNotice(null);
   };
 
   const handleSlotOpen = (slot: EquipmentSlot) => {
@@ -310,12 +249,6 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {throwNotice && (
-        <div className="inventory-toast" role="status">
-          <span>Threw away {throwNotice.name}</span>
-          <button onClick={handleUndoThrow}>Undo</button>
-        </div>
-      )}
 
       {/* MODAL */}
       {selectedItem && (
@@ -346,11 +279,11 @@ const Inventory: React.FC = () => {
                 <button
                   className="danger-btn"
                   onClick={() => {
-                    handleThrowItem(selectedItem);
+                    sellItem(selectedItem);
                     setSelectedItem(null);
                   }}
                 >
-                  Throw Item
+                  Sell Item
                 </button>
               )}
               <button className="modal-close" onClick={() => setSelectedItem(null)}>

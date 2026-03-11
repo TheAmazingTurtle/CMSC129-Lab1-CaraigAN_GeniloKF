@@ -3,7 +3,7 @@ import { useItems } from '../../../contexts/ItemContext';
 import { usePlayer } from '../../../contexts/PlayerContext';
 import type { ItemType } from '../../../contexts/EquipmentContext';
 import './Shop.css';
-import { getNextRotationDate, ROTATION_HOURS } from '../../../domain/shop';
+import { getStageForLevel } from '../../../domain/stages';
 
 type Category = ItemType | 'All';
 
@@ -23,14 +23,14 @@ const categories: Array<{ key: Category; label: string; description: string }> =
 ];
 
 const Shop: React.FC = () => {
-  const { itemBank, shopStock, buyItem, getItemValue, inventory, sellItem } = useItems();
-  const { gold } = usePlayer();
-  const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
+  const { itemBank, shopStock, buyItem, getItemValue } = useItems();
+  const { gold, level } = usePlayer();
   const [selectedCategory, setSelectedCategory] = useState<Category>('Weapon');
   const [toasts, setToasts] = useState<ShopToast[]>([]);
   const [recentlyBoughtId, setRecentlyBoughtId] = useState<number | null>(null);
 
-  const rotationMessage = `Rotates every ${ROTATION_HOURS} hours. Next refresh at ${getNextRotationDate().toLocaleTimeString()}.`;
+  const stage = useMemo(() => getStageForLevel(level), [level]);
+  const rotationMessage = `${stage.label} (Lv ${stage.minLevel}-${stage.maxLevel})`;
 
   const stockSource = shopStock.length ? shopStock : itemBank;
 
@@ -78,112 +78,70 @@ const Shop: React.FC = () => {
             <p>Supplies for the long road.</p>
             <p className="shop-rotation">{rotationMessage}</p>
           </div>
-          <div className="shop-tabs">
-            <button
-              className={`tab-btn ${activeTab === 'buy' ? 'active' : ''}`}
-              onClick={() => setActiveTab('buy')}
-            >
-              Buy
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'sell' ? 'active' : ''}`}
-              onClick={() => setActiveTab('sell')}
-            >
-              Sell
-            </button>
-          </div>
         </div>
 
-        {activeTab === 'buy' ? (
-          <>
-            <div className="category-grid">
-              {categories.map(category => (
-                <button
-                  key={category.key}
-                  className={`category-card ${selectedCategory === category.key ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(category.key)}
-                >
-                  <strong>{category.label}</strong>
-                  <span>{category.description}</span>
-                </button>
-              ))}
-            </div>
+        <div className="category-grid">
+          {categories.map(category => (
+            <button
+              key={category.key}
+              className={`category-card ${selectedCategory === category.key ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category.key)}
+            >
+              <strong>{category.label}</strong>
+              <span>{category.description}</span>
+            </button>
+          ))}
+        </div>
 
-            <div className="list-panel">
-              <div className="list-header">
-                <span>Name</span>
-                <span>Type</span>
-                <span>Rarity</span>
-                <span>Stat</span>
-                <span>Price</span>
-                <span></span>
-              </div>
-              {shopItems.map(item => {
-                const cost = getItemValue(item);
-                const cannotAfford = gold < cost;
-                const isBought = recentlyBoughtId === item.id;
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`list-row buy-row ${cannotAfford ? 'disabled' : ''} ${isBought ? 'bought' : ''}`}
-                    onClick={() => {
-                      if (cannotAfford) {
-                        pushToast('Not enough gold.', 'error');
-                        return;
-                      }
-                      handleBuy(item.id);
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter' && e.key !== ' ') return;
-                      e.preventDefault();
-                      if (cannotAfford) {
-                        pushToast('Not enough gold.', 'error');
-                        return;
-                      }
-                      handleBuy(item.id);
-                    }}
-                  >
-                    <strong>{item.name}</strong>
-                    <span style={{textAlign: 'center'}}>{item.type}</span>
-                    <span style={{textAlign: 'center'}} className={`rarity ${item.rarity.toLowerCase()}`}>{item.rarity}</span>
-                    <span style={{textAlign: 'center'}} className="muted">{item.stat}</span>
-                    <span style={{textAlign: 'center'}} className="price">{cost} gold</span>
-                  </div>
-                );
-              })}
-              {shopItems.length === 0 && (
-                <div className="empty-message">No items in this category.</div>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="list-panel">
-            <div className="list-header">
-              <span>Name</span>
-              <span>Type</span>
-              <span>Rarity</span>
-              <span>Stat</span>
-              <span>Price</span>
-              <span></span>
-            </div>
-            {inventory.map(item => (
-              <div key={item.id} className="list-row">
-                <strong>{item.name}</strong>
-                <span>{item.type}</span>
-                <span className={`rarity ${item.rarity.toLowerCase()}`}>{item.rarity}</span>
-                <span className="muted">{item.stat}</span>
-                <span className="price">{getItemValue(item)} gold</span>
-                <button onClick={() => sellItem(item)}>Sell</button>
-              </div>
-            ))}
-            {inventory.length === 0 && (
-              <div className="empty-message">No items to sell.</div>
-            )}
+        <div className="list-panel">
+          <div className="list-header">
+            <span>Name</span>
+            <span>Type</span>
+            <span>Rarity</span>
+            <span>Stat</span>
+            <span>Price</span>
+            <span></span>
           </div>
-        )}
+          {shopItems.map(item => {
+            const cost = getItemValue(item);
+            const cannotAfford = gold < cost;
+            const isBought = recentlyBoughtId === item.id;
+
+            return (
+              <div
+                key={item.id}
+                className={`list-row buy-row ${cannotAfford ? 'disabled' : ''} ${isBought ? 'bought' : ''}`}
+                onClick={() => {
+                  if (cannotAfford) {
+                    pushToast('Not enough gold.', 'error');
+                    return;
+                  }
+                  handleBuy(item.id);
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter' && e.key !== ' ') return;
+                  e.preventDefault();
+                  if (cannotAfford) {
+                    pushToast('Not enough gold.', 'error');
+                    return;
+                  }
+                  handleBuy(item.id);
+                }}
+              >
+                <strong>{item.name}</strong>
+                <span style={{ textAlign: 'center' }}>{item.type}</span>
+                <span style={{ textAlign: 'center' }} className={`rarity ${item.rarity.toLowerCase()}`}>{item.rarity}</span>
+                <span style={{ textAlign: 'center' }} className="muted">{item.stat}</span>
+                <span style={{ textAlign: 'center' }} className="price">{cost} gold</span>
+              </div>
+            );
+          })}
+          {shopItems.length === 0 && (
+            <div className="empty-message">No items in this category.</div>
+          )}
+        </div>
       </div>
 
       {toasts.length > 0 && (
