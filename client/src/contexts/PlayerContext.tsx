@@ -129,7 +129,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setSkillPoints(sp => sp + (next % 5 === 0 ? 3 : 2));
       return next;
     });
-    setMaxHp(prev => Math.floor(prev * 1.2));
+
+    var newMaxHp = Math.floor(maxHp * 1.2);
+    setHp(newMaxHp);
+    setMaxHp(newMaxHp);
     setExpThreshold(prev => Math.floor(prev * 1.2));
   };
 

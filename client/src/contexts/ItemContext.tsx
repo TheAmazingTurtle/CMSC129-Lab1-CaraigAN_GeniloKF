@@ -10,7 +10,7 @@ interface ItemContextType {
   addItem: (item: Item) => void;
   removeItem: (id: number) => void;
   sellItem: (item: Item) => void;
-  buyItem: (item: Item) => void;
+  buyItem: (item: Item) => boolean;
   getItemValue: (item: Item) => number;
   rollForLoot: () => Item | null;
   hydrateInventory: (items: Item[]) => void;
@@ -19,7 +19,7 @@ interface ItemContextType {
 const ItemContext = createContext<ItemContextType | undefined>(undefined);
 
 export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { addGold, spendGold } = usePlayer();
+  const { addGold, spendGold, gold } = usePlayer();
   const [inventory, setInventory] = useState<Item[]>(defaultStartingItems);
 
   const addItem = (item: Item) => setInventory(prev => [...prev, item]);
@@ -32,8 +32,10 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const buyItem = (item: Item) => {
     const cost = calcItemValue(item);
+    if (gold < cost) return false;
     spendGold(cost);
     addItem({ ...item, id: Date.now() + Math.floor(Math.random() * 1000) });
+    return true;
   };
 
   const hydrateInventory = (items: Item[]) => {
@@ -51,7 +53,7 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getItemValue: calcItemValue,
     rollForLoot: () => rollForLoot(itemBank),
     hydrateInventory,
-  }), [inventory]);
+  }), [inventory, gold]);
 
   return (
     <ItemContext.Provider value={value}>
