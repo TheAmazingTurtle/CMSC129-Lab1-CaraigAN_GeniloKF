@@ -1,11 +1,7 @@
 import express from 'express';
-import {
-  getBackupUserModel,
-  getActiveUserModel,
-  isPrimaryConnected,
-  isBackupConnected,
-} from '../models/UserBackup.ts';
 import AuthenticateToken from '../middleware/authenticateToken.ts';
+import { validatePlayerSavePayload } from '../validators/player.ts';
+import { isDatabaseAvailable, findUserById, updateUserById } from '../services/userStore.ts';
 
 const router = express.Router();
 
@@ -38,25 +34,14 @@ router.use(AuthenticateToken);
 
 router.get('/', async (req, res) => {
   try {
-    const primaryConnected = isPrimaryConnected();
-    const backupConnected = isBackupConnected();
-    if (!primaryConnected && !backupConnected) {
+    if (!isDatabaseAvailable()) {
       return res.status(503).json({ message: 'Database unavailable' });
     }
 
     const userId = getUserId(res);
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const ActiveUser = getActiveUserModel();
-    let user = await ActiveUser.findById(userId);
-
-    if (!user && primaryConnected && backupConnected) {
-      const BackupUser = getBackupUserModel();
-      if (BackupUser) {
-        user = await BackupUser.findById(userId);
-      }
-    }
-
+    const user = await findUserById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     return res.json({ player: buildPlayerPayload(user) });
@@ -67,14 +52,15 @@ router.get('/', async (req, res) => {
 
 router.put('/', async (req, res) => {
   try {
-    const primaryConnected = isPrimaryConnected();
-    const backupConnected = isBackupConnected();
-    if (!primaryConnected && !backupConnected) {
+    if (!isDatabaseAvailable()) {
       return res.status(503).json({ message: 'Database unavailable' });
     }
 
     const userId = getUserId(res);
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const validation = validatePlayerSavePayload(req.body);
+    if (!validation.ok) return res.status(400).json({ message: validation.message });
 
     const body = req.body ?? {};
     const update: Record<string, unknown> = {};
@@ -117,28 +103,8 @@ router.put('/', async (req, res) => {
       update.equipment = body.equipment;
     }
 
-    const ActiveUser = getActiveUserModel();
-    const user = await ActiveUser.findByIdAndUpdate(
-      userId,
-      { $set: update },
-      { returnDocument: 'after' }
-    );
+    const user = await updateUserById(userId, update);
     if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (primaryConnected && backupConnected) {
-      const BackupUser = getBackupUserModel();
-      if (BackupUser) {
-        try {
-          await BackupUser.findByIdAndUpdate(
-            userId,
-            { $set: update },
-            { returnDocument: 'after', upsert: true }
-          );
-        } catch (err) {
-          console.warn('Backup save failed:', err);
-        }
-      }
-    }
 
     return res.json({ player: buildPlayerPayload(user) });
   } catch (err) {

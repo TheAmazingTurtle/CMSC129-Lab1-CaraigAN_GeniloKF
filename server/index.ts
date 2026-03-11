@@ -1,18 +1,17 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { connectDB } from './config/connectDB.ts';
+import { getPort } from './config/env.ts';
 
 import Signup from './routes/signupRoute.ts';
 import Login from './routes/loginRoute.ts';
 import Logout from './routes/logoutRoute.ts';
 import DeleteAccount from './routes/deleteAccountRoute.ts';
 import SaveRoute from './routes/saveRoute.ts';
-// import AuthenticateToken, { IGetUserAuthInfoRequest } from './middleware/authenticateToken.ts';
+import MeRoute from './routes/meRoute.ts';
 
-dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = getPort();
 
 app.use(cors());
 app.use(express.json());
@@ -21,15 +20,14 @@ app.use('/api/auth/signup', Signup);
 app.use('/api/auth/login', Login);
 app.use('/api/auth/logout', Logout);
 app.use('/api/auth/delete', DeleteAccount);
+app.use('/api/auth/me', MeRoute);
 app.use('/api/player', SaveRoute);
-
-// app.use('api/game/step', AuthenticateToken)
 
 connectDB();
 
 // Existing Test Route
 app.get('/api/test', (req, res) => {
-  res.json({ message: "Backend is woking!" });
+  res.json({ message: 'Backend is woking!' });
 });
 
 // Error Handling Middleware (Optional but recommended)
@@ -39,4 +37,4 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Start Server
-app.listen(5000, () => console.log("Server running on port 5000"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,9 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+import { getJwtSecret } from '../config/env.ts';
 
 type JwtPayload = {
   userId?: string;
@@ -16,6 +13,8 @@ const AuthenticateToken: express.RequestHandler = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) return res.status(401).json({ message: 'No entry without a soul (token).' });
+
+  const JWT_SECRET = getJwtSecret();
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ message: 'Your session has expired.' });

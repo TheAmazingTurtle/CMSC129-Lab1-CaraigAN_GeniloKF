@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { usePlayer } from './PlayerContext';
 import { useEquipment } from './EquipmentContext';
 import { useItems } from './ItemContext';
+import { getApiBaseUrl } from '../config.ts';
 
-const SAVE_URL = 'http://localhost:5000/api/player';
+const SAVE_PATH = '/api/player';
 
 type HydrateFns = {
   hydratePlayer: ReturnType<typeof usePlayer>['hydratePlayer'];
@@ -48,7 +49,9 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       };
     }
 
-    fetch(SAVE_URL, {
+    const baseUrl = getApiBaseUrl();
+
+    fetch(`${baseUrl}${SAVE_PATH}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -122,7 +125,8 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
 
     saveTimeout.current = window.setTimeout(() => {
-      fetch(SAVE_URL, {
+      const baseUrl = getApiBaseUrl();
+      fetch(`${baseUrl}${SAVE_PATH}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

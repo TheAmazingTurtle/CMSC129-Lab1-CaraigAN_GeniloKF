@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../contexts/PlayerContext.tsx';
 import './Character.css';
+import { getApiBaseUrl } from '../../../config.ts';
 
 const Character: React.FC = () => {
   const navigate = useNavigate();
@@ -22,14 +23,15 @@ const Character: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', {
+      const baseUrl = getApiBaseUrl();
+      await fetch(`${baseUrl}/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('game_token')}`
         }
       });
     } catch (err) {
-      console.error("Server-side logout failed, proceeding with local logout.");
+      console.error('Server-side logout failed, proceeding with local logout.');
     } finally {
       localStorage.removeItem('game_token');
       navigate('/login');
@@ -41,7 +43,8 @@ const Character: React.FC = () => {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/delete', {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/auth/delete`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('game_token')}`

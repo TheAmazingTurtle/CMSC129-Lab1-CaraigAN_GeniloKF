@@ -16,6 +16,7 @@ import { EquipmentProvider } from './contexts/EquipmentContext.tsx';
 import { ItemProvider } from './contexts/ItemContext.tsx';
 import { EnemyProvider } from './contexts/EnemyContext.tsx';
 import GameSaveGate from './contexts/GameSaveGate.tsx';
+import { getApiBaseUrl } from './config.ts';
 
 const RootRedirect: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'authed'>('checking');
@@ -27,7 +28,9 @@ const RootRedirect: React.FC = () => {
       return;
     }
 
-    fetch('http://localhost:5000/api/player', {
+    const baseUrl = getApiBaseUrl();
+
+    fetch(`${baseUrl}/api/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

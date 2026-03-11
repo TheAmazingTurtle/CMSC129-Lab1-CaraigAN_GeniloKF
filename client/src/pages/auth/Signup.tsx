@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Auth.css';
+import { getApiBaseUrl } from '../../config.ts';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,16 +18,17 @@ const Signup: React.FC = () => {
 
     // Basic Validation
     if (password !== confirmPassword) {
-      return setError("Passwords do not match!");
+      return setError('Passwords do not match!');
     }
     if (password.length < 6) {
-      return setError("Password must be at least 6 characters.");
+      return setError('Password must be at least 6 characters.');
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/signup', {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -39,10 +41,10 @@ const Signup: React.FC = () => {
         localStorage.setItem('game_token', data.token);
         navigate('/dashboard');
       } else {
-        setError(data.message || "Failed to create account.");
+        setError(data.message || 'Failed to create account.');
       }
     } catch (err) {
-      setError("Server is offline. Try again later.");
+      setError('Server is offline. Try again later.');
     } finally {
       setLoading(false);
     }
