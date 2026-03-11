@@ -3,8 +3,9 @@ import { usePlayer } from '../../../contexts/PlayerContext.tsx';
 import { useItems } from '../../../contexts/ItemContext.tsx';
 import { useEnemy } from '../../../contexts/EnemyContext.tsx';
 import type { Item } from '../../../contexts/EquipmentContext';
-import { calcDamage, calcDodgeChance } from '../../../services/combat';
+import { calcDamage, calcDodgeChance, calcCritChance, applyCrit } from '../../../services/combat';
 import './Dashboard.css';
+import QuestPanel from '../../../components/QuestPanel.tsx';
 
 const dialogueBank = [
   'The road hums with old secrets.',
@@ -47,6 +48,7 @@ const Dashboard: React.FC = () => {
     dexterity,
     regenHP,
     addTempBuff,
+    recordEnemyDefeat,
   } = usePlayer();
   const { rollForLoot, addItem, inventory, removeItem } = useItems();
   const { encounter, startEncounter, clearEncounter, setEncounter } = useEnemy();
@@ -119,10 +121,19 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    const damage = calcDamage(encounter.atk, defense);
+    const critChance = calcCritChance(encounter.dex, dexterity);
+    const crit = Math.random() < critChance;
+
+    const baseDamage = calcDamage(encounter.atk, defense);
+    const damage = crit ? applyCrit(baseDamage) : baseDamage;
     const remainingHp = Math.max(0, hp - damage);
+
     takeDamage(damage);
-    setDialogueLine(`${encounter.name} hits you for ${damage}.`);
+    setDialogueLine(
+      crit
+        ? `${encounter.name} lands a critical hit for ${damage}!`
+        : `${encounter.name} hits you for ${damage}.`
+    );
 
     endEncounterOnDeath(remainingHp);
   };
@@ -139,16 +150,25 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    const damage = calcDamage(attack, encounter.def);
+    const critChance = calcCritChance(dexterity, encounter.dex);
+    const crit = Math.random() < critChance;
+
+    const baseDamage = calcDamage(attack, encounter.def);
+    const damage = crit ? applyCrit(baseDamage) : baseDamage;
     addDamageDealt(damage);
 
     const updated = { ...encounter, hp: Math.max(0, encounter.hp - damage) };
     setEncounter(updated);
-    setDialogueLine(`You hit ${encounter.name} for ${damage}.`);
+    setDialogueLine(
+      crit
+        ? `Critical hit! You strike ${encounter.name} for ${damage}.`
+        : `You hit ${encounter.name} for ${damage}.`
+    );
 
     if (updated.hp <= 0) {
       addGold(updated.goldReward);
       gainExp(updated.expReward);
+      recordEnemyDefeat();
       pushToast(`+${updated.goldReward} gold`);
       pushToast(`+${updated.expReward} XP`);
 
@@ -194,6 +214,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="page-content">
+      <QuestPanel />
+
       <div className="event-log">
         <p>{dialogueLine}</p>
       </div>

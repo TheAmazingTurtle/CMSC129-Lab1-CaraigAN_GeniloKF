@@ -18,6 +18,7 @@ import { EnemyProvider } from './contexts/EnemyContext.tsx';
 import GameSaveGate from './contexts/GameSaveGate.tsx';
 import { apiRequest } from './services/apiClient.ts';
 import ServerStatusBanner from './components/ServerStatusBanner.tsx';
+import type { MeResponse } from './types/api.ts';
 
 const RootRedirect: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'authed'>('checking');
@@ -29,7 +30,7 @@ const RootRedirect: React.FC = () => {
       return;
     }
 
-    apiRequest('/api/auth/me', { token, retry: 1 })
+    apiRequest<MeResponse>('/api/auth/me', { token, retry: 1 })
       .then(() => setStatus('authed'))
       .catch(() => setStatus('checking'));
   }, []);

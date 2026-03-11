@@ -16,6 +16,7 @@ const validatePlayerSavePayload = (body: unknown) => {
     'totalDamageDealt',
     'totalDamageReceived',
     'totalGoldEarned',
+    'totalEnemiesDefeated',
   ];
 
   for (const field of numberFields) {

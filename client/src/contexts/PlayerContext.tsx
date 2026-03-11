@@ -21,6 +21,7 @@ type PlayerSaveData = {
   totalDamageDealt: number;
   totalDamageReceived: number;
   totalGoldEarned: number;
+  totalEnemiesDefeated: number;
 };
 
 type StatKey = keyof StatBlock;
@@ -62,6 +63,7 @@ interface PlayerContextType {
   totalDamageDealt: number;
   totalDamageReceived: number;
   totalGoldEarned: number;
+  totalEnemiesDefeated: number;
   addGold: (amount: number) => void;
   spendGold: (amount: number) => void;
   regenHP: (amount: number) => void;
@@ -74,6 +76,7 @@ interface PlayerContextType {
   resetSkillPoints: () => void;
   recordStep: () => void;
   addDamageDealt: (amount: number) => void;
+  recordEnemyDefeat: () => void;
   addTempBuff: (name: string, bonuses: Partial<StatBlock>, durationSteps: number) => void;
   hydratePlayer: (data: Partial<PlayerSaveData>) => void;
 }
@@ -95,6 +98,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [totalDamageDealt, setTotalDamageDealt] = useState(0);
   const [totalDamageReceived, setTotalDamageReceived] = useState(0);
   const [totalGoldEarned, setTotalGoldEarned] = useState(0);
+  const [totalEnemiesDefeated, setTotalEnemiesDefeated] = useState(0);
 
   const addGold = (amount: number) => {
     if (amount <= 0) return;
@@ -173,6 +177,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTotalDamageDealt(prev => prev + amount);
   };
 
+  const recordEnemyDefeat = () => {
+    setTotalEnemiesDefeated(prev => prev + 1);
+  };
+
   const hydratePlayer = (data: Partial<PlayerSaveData>) => {
     const nextLevel = typeof data.level === 'number' && data.level > 0 ? data.level : level;
     const nextMaxHp = calcScaledValue(100, nextLevel);
@@ -200,6 +208,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (typeof data.totalDamageDealt === 'number') setTotalDamageDealt(data.totalDamageDealt);
     if (typeof data.totalDamageReceived === 'number') setTotalDamageReceived(data.totalDamageReceived);
     if (typeof data.totalGoldEarned === 'number') setTotalGoldEarned(data.totalGoldEarned);
+    if (typeof data.totalEnemiesDefeated === 'number') setTotalEnemiesDefeated(data.totalEnemiesDefeated);
   };
 
   const derivedStats = useMemo(() => {
@@ -248,6 +257,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         totalDamageDealt,
         totalDamageReceived,
         totalGoldEarned,
+        totalEnemiesDefeated,
         addGold,
         spendGold,
         regenHP,
@@ -260,6 +270,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         resetSkillPoints,
         recordStep,
         addDamageDealt,
+        recordEnemyDefeat,
         addTempBuff,
         hydratePlayer,
       }}
@@ -271,6 +282,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 export const usePlayer = () => {
   const context = useContext(PlayerContext);
-  if (!context) throw new Error("usePlayer must be used within PlayerProvider");
+  if (!context) throw new Error('usePlayer must be used within PlayerProvider');
   return context;
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Auth.css';
 import { apiRequest } from '../../services/apiClient.ts';
+import type { AuthResponse } from '../../types/api.ts';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -27,7 +28,7 @@ const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      const data = await apiRequest<{ token: string }>('/api/auth/signup', {
+      const data = await apiRequest<AuthResponse>('/api/auth/signup', {
         method: 'POST',
         body: { email, password },
       });

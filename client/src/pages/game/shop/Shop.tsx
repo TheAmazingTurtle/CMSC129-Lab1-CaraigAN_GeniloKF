@@ -3,6 +3,7 @@ import { useItems } from '../../../contexts/ItemContext';
 import { usePlayer } from '../../../contexts/PlayerContext';
 import type { ItemType } from '../../../contexts/EquipmentContext';
 import './Shop.css';
+import { getNextRotationDate, ROTATION_HOURS } from '../../../domain/shop';
 
 type Category = ItemType | 'All';
 
@@ -22,17 +23,21 @@ const categories: Array<{ key: Category; label: string; description: string }> =
 ];
 
 const Shop: React.FC = () => {
-  const { itemBank, buyItem, getItemValue, inventory, sellItem } = useItems();
+  const { itemBank, shopStock, buyItem, getItemValue, inventory, sellItem } = useItems();
   const { gold } = usePlayer();
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [selectedCategory, setSelectedCategory] = useState<Category>('Weapon');
   const [toasts, setToasts] = useState<ShopToast[]>([]);
   const [recentlyBoughtId, setRecentlyBoughtId] = useState<number | null>(null);
 
+  const rotationMessage = `Rotates every ${ROTATION_HOURS} hours. Next refresh at ${getNextRotationDate().toLocaleTimeString()}.`;
+
+  const stockSource = shopStock.length ? shopStock : itemBank;
+
   const shopItems = useMemo(() => {
-    if (selectedCategory === 'All') return itemBank;
-    return itemBank.filter(item => item.type === selectedCategory);
-  }, [itemBank, selectedCategory]);
+    if (selectedCategory === 'All') return stockSource;
+    return stockSource.filter(item => item.type === selectedCategory);
+  }, [stockSource, selectedCategory]);
 
   const pushToast = (message: string, tone: ShopToast['tone']) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -43,7 +48,7 @@ const Shop: React.FC = () => {
   };
 
   const handleBuy = (itemId: number) => {
-    const item = itemBank.find(entry => entry.id === itemId);
+    const item = stockSource.find(entry => entry.id === itemId);
     if (!item) return;
 
     const cost = getItemValue(item);
@@ -71,6 +76,7 @@ const Shop: React.FC = () => {
           <div>
             <h2>Arcade Shop</h2>
             <p>Supplies for the long road.</p>
+            <p className="shop-rotation">{rotationMessage}</p>
           </div>
           <div className="shop-tabs">
             <button

@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import type { Item } from './EquipmentContext';
 import { usePlayer } from './PlayerContext';
 import { itemBank, defaultStartingItems, getItemValue as calcItemValue } from '../domain/items';
 import { rollForLoot } from '../services/loot';
+import { buildShopStock, getShopRotationKey } from '../domain/shop';
 
 interface ItemContextType {
   inventory: Item[];
   itemBank: Item[];
+  shopStock: Item[];
+  shopRotationKey: string;
   addItem: (item: Item) => void;
   removeItem: (id: number) => void;
   sellItem: (item: Item) => void;
@@ -19,8 +22,22 @@ interface ItemContextType {
 const ItemContext = createContext<ItemContextType | undefined>(undefined);
 
 export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { addGold, spendGold, gold } = usePlayer();
+  const { addGold, spendGold, gold, dexterity, level } = usePlayer();
   const [inventory, setInventory] = useState<Item[]>(defaultStartingItems);
+  const [shopRotationKey, setShopRotationKey] = useState(getShopRotationKey());
+  const [shopStock, setShopStock] = useState<Item[]>(() => buildShopStock(itemBank, getShopRotationKey()));
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const nextKey = getShopRotationKey();
+      if (nextKey !== shopRotationKey) {
+        setShopRotationKey(nextKey);
+        setShopStock(buildShopStock(itemBank, nextKey));
+      }
+    }, 60000);
+
+    return () => window.clearInterval(interval);
+  }, [shopRotationKey]);
 
   const addItem = (item: Item) => setInventory(prev => [...prev, item]);
   const removeItem = (id: number) => setInventory(prev => prev.filter(i => i.id !== id));
@@ -46,14 +63,16 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo(() => ({
     inventory,
     itemBank,
+    shopStock,
+    shopRotationKey,
     addItem,
     removeItem,
     sellItem,
     buyItem,
     getItemValue: calcItemValue,
-    rollForLoot: () => rollForLoot(itemBank),
+    rollForLoot: () => rollForLoot(itemBank, { luck: dexterity, level }),
     hydrateInventory,
-  }), [inventory, gold]);
+  }), [inventory, gold, dexterity, level, shopStock, shopRotationKey]);
 
   return (
     <ItemContext.Provider value={value}>

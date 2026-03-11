@@ -273,3 +273,73 @@
   color: white;
   transform: translateY(-2px);
 }
+
+.quest-panel {
+  width: 100%;
+  max-width: 420px;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.quest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #ffd700;
+}
+
+.quest-toast {
+  font-size: 0.75rem;
+  color: #b8f28b;
+}
+
+.quest-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.quest-item {
+  background: #262626;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.quest-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #e2e2e2;
+}
+
+.quest-progress {
+  color: #a1a1aa;
+}
+
+.quest-reward {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #ffd700;
+}
+
+.quest-claim {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #333;
+  color: #eee;
+  font-size: 0.75rem;
+}
+
+.quest-claim:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -5,6 +5,7 @@ import { useItems } from './ItemContext';
 import { getApiBaseUrl } from '../config.ts';
 import { SaveProvider } from './SaveContext.tsx';
 import { apiRequest } from '../services/apiClient.ts';
+import type { PlayerResponse } from '../types/api.ts';
 
 const SAVE_PATH = '/api/player';
 
@@ -27,6 +28,7 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     totalDamageDealt,
     totalDamageReceived,
     totalGoldEarned,
+    totalEnemiesDefeated,
     hydratePlayer,
   } = usePlayer();
   const { equipment, hydrateEquipment } = useEquipment();
@@ -57,6 +59,7 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     totalDamageDealt,
     totalDamageReceived,
     totalGoldEarned,
+    totalEnemiesDefeated,
     inventory,
     equipment,
   }), [
@@ -71,6 +74,7 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     totalDamageDealt,
     totalDamageReceived,
     totalGoldEarned,
+    totalEnemiesDefeated,
     inventory,
     equipment,
   ]);
@@ -105,7 +109,7 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       };
     }
 
-    apiRequest<{ player?: any }>(SAVE_PATH, {
+    apiRequest<PlayerResponse>(SAVE_PATH, {
       token,
       retry: 1,
     })

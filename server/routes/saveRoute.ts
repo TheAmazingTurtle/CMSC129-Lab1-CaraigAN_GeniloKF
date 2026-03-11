@@ -3,9 +3,30 @@ import AuthenticateToken from '../middleware/authenticateToken.ts';
 import { validatePlayerSavePayload } from '../validators/player.ts';
 import { isDatabaseAvailable, findUserById, updateUserById } from '../services/userStore.ts';
 
+type PlayerRecord = {
+  level?: number;
+  gold?: number;
+  exp?: number;
+  hp?: number;
+  skillPoints?: number;
+  skillStats?: {
+    attack?: number;
+    defense?: number;
+    dexterity?: number;
+  };
+  buffs?: unknown[];
+  stepsTaken?: number;
+  totalDamageDealt?: number;
+  totalDamageReceived?: number;
+  totalGoldEarned?: number;
+  totalEnemiesDefeated?: number;
+  inventory?: unknown[];
+  equipment?: Record<string, unknown>;
+};
+
 const router = express.Router();
 
-const buildPlayerPayload = (user: any) => ({
+const buildPlayerPayload = (user: PlayerRecord) => ({
   level: user.level ?? 1,
   gold: user.gold ?? 0,
   exp: user.exp ?? 0,
@@ -17,6 +38,7 @@ const buildPlayerPayload = (user: any) => ({
   totalDamageDealt: user.totalDamageDealt ?? 0,
   totalDamageReceived: user.totalDamageReceived ?? 0,
   totalGoldEarned: user.totalGoldEarned ?? 0,
+  totalEnemiesDefeated: user.totalEnemiesDefeated ?? 0,
   inventory: user.inventory ?? [],
   equipment: user.equipment ?? {
     'Weapon': null,
@@ -75,6 +97,7 @@ router.put('/', async (req, res) => {
       'totalDamageDealt',
       'totalDamageReceived',
       'totalGoldEarned',
+      'totalEnemiesDefeated',
     ];
 
     numberFields.forEach((field) => {

@@ -19,6 +19,7 @@ const Character: React.FC = () => {
     totalDamageDealt,
     totalDamageReceived,
     totalGoldEarned,
+    totalEnemiesDefeated,
   } = usePlayer();
 
   const handleLogout = async () => {
@@ -125,6 +126,10 @@ const Character: React.FC = () => {
             <div>
               <span>Damage Received</span>
               <strong>{totalDamageReceived}</strong>
+            </div>
+            <div>
+              <span>Enemies Defeated</span>
+              <strong>{totalEnemiesDefeated}</strong>
             </div>
           </div>
         </div>

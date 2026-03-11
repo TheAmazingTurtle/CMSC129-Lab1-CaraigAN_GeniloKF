@@ -73,6 +73,7 @@ const userSchema = new mongoose.Schema({
   totalDamageDealt: { type: Number, default: 0 },
   totalDamageReceived: { type: Number, default: 0 },
   totalGoldEarned: { type: Number, default: 0 },
+  totalEnemiesDefeated: { type: Number, default: 0 },
   inventory: { type: [itemSchema], default: [] },
   equipment: {
     type: equipmentSchema,

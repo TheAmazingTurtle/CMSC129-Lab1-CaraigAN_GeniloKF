@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { apiRequest } from '../../services/apiClient.ts';
+import type { MeResponse } from '../../types/api.ts';
 
 const ProtectedRoute: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'authed' | 'rejected'>('checking');
@@ -12,7 +13,7 @@ const ProtectedRoute: React.FC = () => {
       return;
     }
 
-    apiRequest('/api/auth/me', { token, retry: 1 })
+    apiRequest<MeResponse>('/api/auth/me', { token, retry: 1 })
       .then(() => setStatus('authed'))
       .catch(() => setStatus('rejected'));
   }, [token]);
