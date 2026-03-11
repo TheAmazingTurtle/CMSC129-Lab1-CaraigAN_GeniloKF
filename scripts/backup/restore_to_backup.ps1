@@ -4,10 +4,26 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+$envPath = Join-Path $PSScriptRoot '..\..\server\.env'
+if (Test-Path $envPath) {
+  Get-Content $envPath | ForEach-Object {
+    $line = $_.Trim()
+    if (-not $line -or $line.StartsWith('#')) { return }
+    $parts = $line.Split('=', 2)
+    if ($parts.Length -ne 2) { return }
+    $key = $parts[0].Trim()
+    $value = $parts[1].Trim().Trim('"')
+    if (-not (Get-Item "Env:$key" -ErrorAction SilentlyContinue)) {
+      Set-Item -Path "Env:$key" -Value $value
+    }
+  }
+}
+
 $backupUri = $env:MONGO_URI_BACKUP
 if (-not $backupUri) { throw 'MONGO_URI_BACKUP must be set.' }
 
 $root = if ($env:BACKUP_DIR) { $env:BACKUP_DIR } else { Join-Path $PSScriptRoot '..\..\backup_dumps' }
+if (-not (Test-Path $root)) { New-Item -ItemType Directory -Force -Path $root | Out-Null }
 $root = (Resolve-Path $root).Path
 
 if (-not $DumpPath) {
