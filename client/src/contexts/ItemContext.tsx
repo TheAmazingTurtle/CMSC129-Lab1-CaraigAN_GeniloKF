@@ -13,6 +13,7 @@ interface ItemContextType {
   buyItem: (item: Item) => void;
   getItemValue: (item: Item) => number;
   rollForLoot: () => Item | null;
+  hydrateInventory: (items: Item[]) => void;
 }
 
 const ItemContext = createContext<ItemContextType | undefined>(undefined);
@@ -35,6 +36,11 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addItem({ ...item, id: Date.now() + Math.floor(Math.random() * 1000) });
   };
 
+  const hydrateInventory = (items: Item[]) => {
+    if (!Array.isArray(items)) return;
+    setInventory(items);
+  };
+
   const value = useMemo(() => ({
     inventory,
     itemBank,
@@ -44,6 +50,7 @@ export const ItemProvider: React.FC<{ children: React.ReactNode }> = ({ children
     buyItem,
     getItemValue: calcItemValue,
     rollForLoot: () => rollForLoot(itemBank),
+    hydrateInventory,
   }), [inventory]);
 
   return (

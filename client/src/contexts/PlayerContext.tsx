@@ -9,6 +9,20 @@ type StatModifier = {
   remainingSteps: number;
 };
 
+type PlayerSaveData = {
+  level: number;
+  gold: number;
+  exp: number;
+  hp: number;
+  skillPoints: number;
+  skillStats: StatBlock;
+  buffs: StatModifier[];
+  stepsTaken: number;
+  totalDamageDealt: number;
+  totalDamageReceived: number;
+  totalGoldEarned: number;
+};
+
 type StatKey = keyof StatBlock;
 
 const baseStats: StatBlock = {
@@ -21,6 +35,14 @@ const emptyStats: StatBlock = {
   attack: 0,
   defense: 0,
   dexterity: 0,
+};
+
+const calcScaledValue = (base: number, level: number) => {
+  let value = base;
+  for (let i = 1; i < level; i += 1) {
+    value = Math.floor(value * 1.2);
+  }
+  return value;
 };
 
 interface PlayerContextType {
@@ -53,6 +75,7 @@ interface PlayerContextType {
   recordStep: () => void;
   addDamageDealt: (amount: number) => void;
   addTempBuff: (name: string, bonuses: Partial<StatBlock>, durationSteps: number) => void;
+  hydratePlayer: (data: Partial<PlayerSaveData>) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -147,6 +170,35 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTotalDamageDealt(prev => prev + amount);
   };
 
+  const hydratePlayer = (data: Partial<PlayerSaveData>) => {
+    const nextLevel = typeof data.level === 'number' && data.level > 0 ? data.level : level;
+    const nextMaxHp = calcScaledValue(100, nextLevel);
+    const nextExpThreshold = calcScaledValue(100, nextLevel);
+
+    if (typeof data.level === 'number') setLevel(data.level);
+    setMaxHp(nextMaxHp);
+    setExpThreshold(nextExpThreshold);
+
+    if (typeof data.hp === 'number') setHp(Math.min(data.hp, nextMaxHp));
+    if (typeof data.gold === 'number') setGold(data.gold);
+    if (typeof data.exp === 'number') setExp(data.exp);
+    if (typeof data.skillPoints === 'number') setSkillPoints(data.skillPoints);
+
+    if (data.skillStats) {
+      setSkillStats({
+        attack: data.skillStats.attack ?? 0,
+        defense: data.skillStats.defense ?? 0,
+        dexterity: data.skillStats.dexterity ?? 0,
+      });
+    }
+
+    if (Array.isArray(data.buffs)) setBuffs(data.buffs);
+    if (typeof data.stepsTaken === 'number') setStepsTaken(data.stepsTaken);
+    if (typeof data.totalDamageDealt === 'number') setTotalDamageDealt(data.totalDamageDealt);
+    if (typeof data.totalDamageReceived === 'number') setTotalDamageReceived(data.totalDamageReceived);
+    if (typeof data.totalGoldEarned === 'number') setTotalGoldEarned(data.totalGoldEarned);
+  };
+
   const derivedStats = useMemo(() => {
     const equipmentBonus = Object.values(equipment).reduce<StatBlock>((acc, item) => {
       if (!item?.bonuses) return acc;
@@ -206,6 +258,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         recordStep,
         addDamageDealt,
         addTempBuff,
+        hydratePlayer,
       }}
     >
       {children}

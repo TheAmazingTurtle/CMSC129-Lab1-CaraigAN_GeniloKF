@@ -28,17 +28,20 @@ interface EquipmentContextType {
   equipment: Record<EquipmentSlot, Item | null>;
   equipItem: (item: Item) => void;
   unequipItem: (slot: EquipmentSlot) => void;
+  hydrateEquipment: (next: Partial<Record<EquipmentSlot, Item | null>>) => void;
 }
 
 const EquipmentContext = createContext<EquipmentContextType | undefined>(undefined);
 
+const initialEquipment: Record<EquipmentSlot, Item | null> = {
+  'Weapon': null,
+  'Head Wear': null,
+  'Body Armor': null,
+  'Pants': null,
+};
+
 export const EquipmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [equipment, setEquipment] = useState<Record<EquipmentSlot, Item | null>>({
-    'Weapon': null,
-    'Head Wear': null,
-    'Body Armor': null,
-    'Pants': null,
-  });
+  const [equipment, setEquipment] = useState<Record<EquipmentSlot, Item | null>>(initialEquipment);
 
   const equipItem = (item: Item) => {
     if (item.type === 'Consumable') return;
@@ -49,8 +52,13 @@ export const EquipmentProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setEquipment(prev => ({ ...prev, [slot]: null }));
   };
 
+  const hydrateEquipment = (next: Partial<Record<EquipmentSlot, Item | null>>) => {
+    if (!next) return;
+    setEquipment(prev => ({ ...prev, ...next }));
+  };
+
   return (
-    <EquipmentContext.Provider value={{ equipment, equipItem, unequipItem }}>
+    <EquipmentContext.Provider value={{ equipment, equipItem, unequipItem, hydrateEquipment }}>
       {children}
     </EquipmentContext.Provider>
   );
