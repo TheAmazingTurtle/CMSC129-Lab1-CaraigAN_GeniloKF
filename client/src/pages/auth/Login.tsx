@@ -3,16 +3,24 @@ import { useNavigate, Link } from 'react-router-dom';
 import './Auth.css';
 import { apiRequest } from '../../services/apiClient.ts';
 import type { AuthResponse } from '../../types/api.ts';
+import type { MeResponse } from '../../types/api.ts';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('game_token');
-    if (token) {
-      // Hero is already in the realm, send them to the front lines
-      navigate('/dashboard', { replace: true });
-    }
+    if (!token) return;
+
+    apiRequest<MeResponse>('/api/auth/me', { token, retry: 1 })
+      .then(() => {
+        // Token is valid, send them to the front lines
+        navigate('/dashboard', { replace: true });
+      })
+      .catch(() => {
+        // Invalid/expired token; clear it to avoid redirect loops
+        localStorage.removeItem('game_token');
+      });
   }, [navigate]);
 
 
