@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { getApiBaseUrl } from '../../config.ts';
+import { apiRequest } from '../../services/apiClient.ts';
 
 const ProtectedRoute: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'authed' | 'rejected'>('checking');
@@ -12,14 +12,8 @@ const ProtectedRoute: React.FC = () => {
       return;
     }
 
-    const baseUrl = getApiBaseUrl();
-
-    fetch(`${baseUrl}/api/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => setStatus(res.ok ? 'authed' : 'rejected'))
+    apiRequest('/api/auth/me', { token, retry: 1 })
+      .then(() => setStatus('authed'))
       .catch(() => setStatus('rejected'));
   }, [token]);
 

@@ -16,7 +16,8 @@ import { EquipmentProvider } from './contexts/EquipmentContext.tsx';
 import { ItemProvider } from './contexts/ItemContext.tsx';
 import { EnemyProvider } from './contexts/EnemyContext.tsx';
 import GameSaveGate from './contexts/GameSaveGate.tsx';
-import { getApiBaseUrl } from './config.ts';
+import { apiRequest } from './services/apiClient.ts';
+import ServerStatusBanner from './components/ServerStatusBanner.tsx';
 
 const RootRedirect: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'authed'>('checking');
@@ -28,19 +29,9 @@ const RootRedirect: React.FC = () => {
       return;
     }
 
-    const baseUrl = getApiBaseUrl();
-
-    fetch(`${baseUrl}/api/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => {
-        setStatus(res.ok ? 'authed' : 'checking');
-      })
-      .catch(() => {
-        setStatus('checking');
-      });
+    apiRequest('/api/auth/me', { token, retry: 1 })
+      .then(() => setStatus('authed'))
+      .catch(() => setStatus('checking'));
   }, []);
 
   if (status === 'checking') return <Navigate to="/login" />;
@@ -50,6 +41,7 @@ const RootRedirect: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Router>
+      <ServerStatusBanner />
       <EquipmentProvider>
         <PlayerProvider>
           <ItemProvider>

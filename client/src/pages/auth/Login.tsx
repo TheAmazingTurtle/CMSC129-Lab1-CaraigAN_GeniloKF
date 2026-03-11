@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Auth.css';
-import { getApiBaseUrl } from '../../config.ts';
+import { apiRequest } from '../../services/apiClient.ts';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -26,24 +26,16 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/auth/login`, {
+      const data = await apiRequest<{ token: string }>('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: { email, password },
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store the JWT for future authenticated requests
-        localStorage.setItem('game_token', data.token);
-        navigate('/dashboard');
-      } else {
-        setError(data.message || 'Invalid credentials.');
-      }
-    } catch (err) {
-      setError('Cannot reach the realm server. Is the backend running?');
+      // Store the JWT for future authenticated requests
+      localStorage.setItem('game_token', data.token);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Invalid credentials.');
     } finally {
       setLoading(false);
     }

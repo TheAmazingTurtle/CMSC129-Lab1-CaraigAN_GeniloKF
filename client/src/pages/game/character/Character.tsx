@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../contexts/PlayerContext.tsx';
 import './Character.css';
-import { getApiBaseUrl } from '../../../config.ts';
+import { apiRequest } from '../../../services/apiClient.ts';
 
 const Character: React.FC = () => {
   const navigate = useNavigate();
@@ -23,12 +23,9 @@ const Character: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      const baseUrl = getApiBaseUrl();
-      await fetch(`${baseUrl}/api/auth/logout`, {
+      await apiRequest('/api/auth/logout', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('game_token')}`
-        }
+        token: localStorage.getItem('game_token'),
       });
     } catch (err) {
       console.error('Server-side logout failed, proceeding with local logout.');
@@ -43,21 +40,12 @@ const Character: React.FC = () => {
     if (!confirmDelete) return;
 
     try {
-      const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/auth/delete`, {
+      await apiRequest('/api/auth/delete', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('game_token')}`
-        }
+        token: localStorage.getItem('game_token'),
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data?.message || 'Failed to delete account.');
-        return;
-      }
-    } catch (err) {
-      alert('Failed to delete account.');
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete account.');
       return;
     }
 

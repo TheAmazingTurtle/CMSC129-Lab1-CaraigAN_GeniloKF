@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Auth.css';
-import { getApiBaseUrl } from '../../config.ts';
+import { apiRequest } from '../../services/apiClient.ts';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -27,24 +27,16 @@ const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/auth/signup`, {
+      const data = await apiRequest<{ token: string }>('/api/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: { email, password },
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store token and move to dashboard
-        localStorage.setItem('game_token', data.token);
-        navigate('/dashboard');
-      } else {
-        setError(data.message || 'Failed to create account.');
-      }
-    } catch (err) {
-      setError('Server is offline. Try again later.');
+      // Store token and move to dashboard
+      localStorage.setItem('game_token', data.token);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to create account.');
     } finally {
       setLoading(false);
     }

@@ -4,13 +4,17 @@ import { usePlayer } from '../../../contexts/PlayerContext.tsx';
 import './GameLayout.css';
 
 import ProgressBar from '../components/ProgressBar.tsx';
-
+import { useSaveStatus } from '../../../contexts/SaveContext.tsx';
 
 const GameLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
   const { level, gold, exp, expThreshold, hp, maxHp } = usePlayer();
+  const { saveNow, saving, lastSavedAt, saveError } = useSaveStatus();
+
+  const lastSavedLabel = lastSavedAt
+    ? `Saved ${new Date(lastSavedAt).toLocaleTimeString()}`
+    : 'Not saved yet';
 
   return (
     <div className="dashboard-container">
@@ -24,6 +28,14 @@ const GameLayout: React.FC = () => {
         <div className="stat-item">
           <span className="label">Exp:</span>
           <ProgressBar currentProgress={exp} threshold={expThreshold} barColor="var(--exp-color)" />
+        </div>
+        <div className="stat-item save-item">
+          <button className="save-btn" onClick={saveNow} disabled={saving}>
+            {saving ? 'SAVING...' : 'SAVE'}
+          </button>
+          <div className="save-meta">
+            <span>{saveError ? 'Save failed' : lastSavedLabel}</span>
+          </div>
         </div>
       </header>
 

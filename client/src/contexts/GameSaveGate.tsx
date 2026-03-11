@@ -3,6 +3,8 @@ import { usePlayer } from './PlayerContext';
 import { useEquipment } from './EquipmentContext';
 import { useItems } from './ItemContext';
 import { getApiBaseUrl } from '../config.ts';
+import { SaveProvider } from './SaveContext.tsx';
+import { apiRequest } from '../services/apiClient.ts';
 
 const SAVE_PATH = '/api/player';
 
@@ -31,6 +33,10 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const { inventory, hydrateInventory } = useItems();
 
   const [isHydrated, setIsHydrated] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+
   const saveTimeout = useRef<number | null>(null);
   const lastPayloadRef = useRef<string | null>(null);
   const hydrateRef = useRef<HydrateFns>({ hydratePlayer, hydrateEquipment, hydrateInventory });
@@ -38,49 +44,6 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   hydrateRef.current = { hydratePlayer, hydrateEquipment, hydrateInventory };
 
   const token = localStorage.getItem('game_token');
-
-  useEffect(() => {
-    let isActive = true;
-
-    if (!token) {
-      setIsHydrated(true);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    const baseUrl = getApiBaseUrl();
-
-    fetch(`${baseUrl}${SAVE_PATH}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Failed to load player');
-        return res.json();
-      })
-      .then((data) => {
-        if (!isActive) return;
-        const player = data?.player;
-        if (player) {
-          const { hydratePlayer: hpFn, hydrateInventory: hiFn, hydrateEquipment: heFn } = hydrateRef.current;
-          hpFn(player);
-          if (player.inventory) hiFn(player.inventory);
-          if (player.equipment) heFn(player.equipment);
-        }
-      })
-      .catch(() => {
-        if (isActive) setIsHydrated(true);
-      })
-      .finally(() => {
-        if (isActive) setIsHydrated(true);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [token]);
 
   const savePayload = useMemo(() => ({
     level,
@@ -114,6 +77,60 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   const payloadString = useMemo(() => JSON.stringify(savePayload), [savePayload]);
 
+  const saveNow = async () => {
+    if (!token) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await apiRequest(SAVE_PATH, {
+        method: 'PUT',
+        token,
+        body: savePayload,
+      });
+      setLastSavedAt(Date.now());
+    } catch (err: any) {
+      setSaveError(err?.message || 'Failed to save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!token) {
+      setIsHydrated(true);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    apiRequest<{ player?: any }>(SAVE_PATH, {
+      token,
+      retry: 1,
+    })
+      .then((data) => {
+        if (!isActive) return;
+        const player = data?.player;
+        if (player) {
+          const { hydratePlayer: hpFn, hydrateInventory: hiFn, hydrateEquipment: heFn } = hydrateRef.current;
+          hpFn(player);
+          if (player.inventory) hiFn(player.inventory);
+          if (player.equipment) heFn(player.equipment);
+        }
+      })
+      .catch(() => {
+        if (isActive) setIsHydrated(true);
+      })
+      .finally(() => {
+        if (isActive) setIsHydrated(true);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [token]);
+
   useEffect(() => {
     if (!isHydrated || !token) return;
 
@@ -125,15 +142,13 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
 
     saveTimeout.current = window.setTimeout(() => {
-      const baseUrl = getApiBaseUrl();
-      fetch(`${baseUrl}${SAVE_PATH}`, {
+      apiRequest(SAVE_PATH, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: payloadString,
-      }).catch(() => undefined);
+        token,
+        body: savePayload,
+      })
+        .then(() => setLastSavedAt(Date.now()))
+        .catch((err: any) => setSaveError(err?.message || 'Failed to save.'));
     }, 600);
 
     return () => {
@@ -143,7 +158,34 @@ const GameSaveGate: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     };
   }, [isHydrated, token, payloadString]);
 
-  return <>{children}</>;
+  useEffect(() => {
+    if (!token) return;
+
+    const handleBeforeUnload = () => {
+      const baseUrl = getApiBaseUrl();
+      const url = `${baseUrl}${SAVE_PATH}`;
+      const payload = payloadString;
+
+      fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: payload,
+        keepalive: true,
+      }).catch(() => undefined);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [token, payloadString]);
+
+  return (
+    <SaveProvider value={{ lastSavedAt, saving, saveError, saveNow }}>
+      {children}
+    </SaveProvider>
+  );
 };
 
 export default GameSaveGate;
