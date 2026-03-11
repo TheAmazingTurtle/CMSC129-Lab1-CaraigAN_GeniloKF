@@ -34,3 +34,5 @@ Thumbs.db
 
 # Godot-stuff
 godot-project
+# Backup dumps
+backup_dumps/

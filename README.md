@@ -41,20 +41,32 @@ npm run dev
 - `GET /api/player`
 - `PUT /api/player`
 
-## Backup + DR (Atlas Configuration)
-This project uses **Atlas configuration** (not app code) for primary/backup handling.
+## Backup + DR (Manual for Atlas Free Tier)
+Atlas Free tier does not support PITR/automated backups. Use the included scripts to dump the primary cluster and restore into the backup cluster.
 
-Primary cluster:
-- Enable **Continuous Cloud Backup / Point-in-Time Restore**.
-- Configure retention per course requirements.
+### Requirements
+Install MongoDB Database Tools so `mongodump` and `mongorestore` are on PATH.
 
-Backup cluster:
-- Restore from the primary’s backups on a schedule (hourly recommended).
-- Use Atlas UI or Atlas CLI/Admin API automation for scheduled restores.
+### Script environment variables
+Set these in your shell when running the scripts:
+- `MONGO_URI_PRIMARY` (or reuse `MONGO_URI`)
+- `MONGO_URI_BACKUP`
+- `BACKUP_DIR` (optional, defaults to `backup_dumps/`)
 
-Failover runbook:
-1. Restore the latest backup to the backup cluster (or verify scheduled restore ran).
-2. Promote the backup cluster by updating `MONGO_URI` to the backup cluster URI.
+### Run a manual sync (hourly recommended)
+```powershell
+./scripts/backup/sync_backup.ps1
+```
+
+### Run dump or restore separately
+```powershell
+./scripts/backup/backup_primary.ps1
+./scripts/backup/restore_to_backup.ps1
+```
+
+## Failover runbook
+1. Restore latest dump to backup cluster (or run the sync script).
+2. Update `MONGO_URI` to the backup cluster URI.
 3. Restart the server.
 
 ## Notes
