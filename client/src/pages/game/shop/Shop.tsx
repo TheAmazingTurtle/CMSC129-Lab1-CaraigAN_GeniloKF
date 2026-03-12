@@ -25,7 +25,9 @@ const categories: Array<{ key: Category; label: string; description: string }> =
 const Shop: React.FC = () => {
   const { itemBank, shopStock, buyItem, getItemValue } = useItems();
   const { gold, level } = usePlayer();
-  const [selectedCategory, setSelectedCategory] = useState<Category>('Weapon');
+  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
+  const [sortBy, setSortBy] = useState<'name' | 'rarity'>('name');
+  const [sortAsc, setSortAsc] = useState(true);
   const [toasts, setToasts] = useState<ShopToast[]>([]);
   const [recentlyBoughtId, setRecentlyBoughtId] = useState<number | null>(null);
 
@@ -35,9 +37,25 @@ const Shop: React.FC = () => {
   const stockSource = shopStock.length ? shopStock : itemBank;
 
   const shopItems = useMemo(() => {
-    if (selectedCategory === 'All') return stockSource;
-    return stockSource.filter(item => item.type === selectedCategory);
-  }, [stockSource, selectedCategory]);
+    let result = selectedCategory === 'All'
+      ? [...stockSource]
+      : stockSource.filter(item => item.type === selectedCategory);
+
+    result.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'name') {
+        cmp = a.name.localeCompare(b.name);
+      } else {
+        const rarityWeight: Record<string, number> = {
+          Legendary: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1
+        };
+        cmp = (rarityWeight[a.rarity] ?? 0) - (rarityWeight[b.rarity] ?? 0);
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+
+    return result;
+  }, [stockSource, selectedCategory, sortBy, sortAsc]);
 
   const pushToast = (message: string, tone: ShopToast['tone']) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -80,17 +98,38 @@ const Shop: React.FC = () => {
           </div>
         </div>
 
-        <div className="category-grid">
-          {categories.map(category => (
-            <button
-              key={category.key}
-              className={`category-card ${selectedCategory === category.key ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category.key)}
+        <div className="shop-controls">
+          <select
+            className="shop-filter-select"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value as Category)}
+          >
+            <option value="All">All Types</option>
+            <option value="Weapon">Weapons</option>
+            <option value="Head Wear">Head Wear</option>
+            <option value="Body Armor">Body Armor</option>
+            <option value="Pants">Pants</option>
+            <option value="Consumable">Consumables</option>
+          </select>
+
+          <div className="sort-control">
+            <select
+              className="shop-filter-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'rarity')}
             >
-              <strong>{category.label}</strong>
-              <span>{category.description}</span>
+              <option value="name">Sort: Name</option>
+              <option value="rarity">Sort: Rarity</option>
+            </select>
+            <button
+              className="sort-dir-btn"
+              onClick={() => setSortAsc(a => !a)}
+              title={sortAsc ? 'Ascending' : 'Descending'}
+              aria-label="Toggle sort direction"
+            >
+              {sortAsc ? '↑' : '↓'}
             </button>
-          ))}
+          </div>
         </div>
 
         <div className="list-panel">
@@ -100,8 +139,8 @@ const Shop: React.FC = () => {
             <span>Rarity</span>
             <span>Stat</span>
             <span>Price</span>
-            <span></span>
           </div>
+          <div className="list-scroll">
           {shopItems.map(item => {
             const cost = getItemValue(item);
             const cannotAfford = gold < cost;
@@ -134,13 +173,14 @@ const Shop: React.FC = () => {
                 <span style={{ textAlign: 'center' }}>{item.type}</span>
                 <span style={{ textAlign: 'center' }} className={`rarity ${item.rarity.toLowerCase()}`}>{item.rarity}</span>
                 <span style={{ textAlign: 'center' }} className="muted">{item.stat}</span>
-                <span style={{ textAlign: 'center' }} className="price">{cost} gold</span>
+                <span style={{ textAlign: 'center' }} className="price">{cost}g</span>
               </div>
             );
           })}
           {shopItems.length === 0 && (
             <div className="empty-message">No items in this category.</div>
           )}
+          </div>
         </div>
       </div>
 
