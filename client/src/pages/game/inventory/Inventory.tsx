@@ -27,7 +27,8 @@ const Inventory: React.FC = () => {
 
   // --- Filter & Sort State ---
   const [filterType, setFilterType] = useState<ItemType | 'All'>('All');
-  const [sortBy, setSortBy] = useState<'level' | 'rarity'>('level');
+  const [sortBy, setSortBy] = useState<'name' | 'rarity'>('name');
+  const [sortAsc, setSortAsc] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
   // --- Sorting & Filtering Logic ---
@@ -41,16 +42,20 @@ const Inventory: React.FC = () => {
 
     // Sort
     result.sort((a, b) => {
-      if (sortBy === 'level') return b.level - a.level; // Highest level first
-      
-      const rarityWeight: Record<Rarity, number> = { 
-        Legendary: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1 
-      };
-      return rarityWeight[b.rarity] - rarityWeight[a.rarity]; // Highest rarity first
+      let cmp = 0;
+      if (sortBy === 'name') {
+        cmp = a.name.localeCompare(b.name);
+      } else {
+        const rarityWeight: Record<Rarity, number> = {
+          Legendary: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1
+        };
+        cmp = rarityWeight[a.rarity] - rarityWeight[b.rarity];
+      }
+      return sortAsc ? cmp : -cmp;
     });
 
     return result;
-  }, [inventory, filterType, sortBy]);
+  }, [inventory, filterType, sortBy, sortAsc]);
 
   // --- Pagination Logic ---
   const totalPages = Math.ceil(processedItems.length / ITEMS_PER_PAGE) || 1;
@@ -174,8 +179,8 @@ const Inventory: React.FC = () => {
           
           {/* Controls */}
           <div className="inventory-controls">
-            <select 
-              value={filterType} 
+            <select
+              value={filterType}
               onChange={(e) => setFilterType(e.target.value as ItemType | 'All')}
             >
               <option value="All">All Types</option>
@@ -186,13 +191,23 @@ const Inventory: React.FC = () => {
               <option value="Consumable">Consumables</option>
             </select>
 
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value as 'level' | 'rarity')}
-            >
-              <option value="level">Sort: Lvl</option>
-              <option value="rarity">Sort: Rarity</option>
-            </select>
+            <div className="sort-control">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'rarity')}
+              >
+                <option value="name">Sort: Name</option>
+                <option value="rarity">Sort: Rarity</option>
+              </select>
+              <button
+                className="sort-dir-btn"
+                onClick={() => setSortAsc(a => !a)}
+                title={sortAsc ? 'Ascending' : 'Descending'}
+                aria-label="Toggle sort direction"
+              >
+                {sortAsc ? '↑' : '↓'}
+              </button>
+            </div>
           </div>
         </div>
 
