@@ -23,7 +23,7 @@ app.use('/api/auth/delete', DeleteAccount);
 app.use('/api/auth/me', MeRoute);
 app.use('/api/player', SaveRoute);
 
-connectDB();
+void connectDB();
 
 // Existing Test Route
 app.get('/api/test', (req, res) => {
